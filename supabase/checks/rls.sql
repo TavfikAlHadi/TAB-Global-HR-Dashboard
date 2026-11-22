@@ -5,7 +5,8 @@ begin;
 -- 1. Plain employee with a manager
 select set_config('request.jwt.claims', json_build_object('email', (
   select upper(email) from employees  -- upper(): proves case-insensitive match
-  where role = 'employee' and exit_date is null and manager_id is not null limit 1))::text, true);
+  where role = 'employee' and exit_date is null and manager_id is not null
+    and not exists (select 1 from employees r where r.manager_id = employees.id) limit 1))::text, true);
 set local role authenticated;
 do $$ begin
   assert current_employee_id() is not null, 'employee matched by email';
