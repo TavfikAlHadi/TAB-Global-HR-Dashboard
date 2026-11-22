@@ -8,8 +8,9 @@ export function proxy(req: NextRequest) {
   const header = req.headers.get("authorization") ?? "";
   const [scheme, encoded] = header.split(" ");
   if (scheme === "Basic" && encoded) {
-    const decoded = atob(encoded);
-    if (decoded.slice(decoded.indexOf(":") + 1) === password) return NextResponse.next();
+    let decoded = "";
+    try { decoded = atob(encoded); } catch {} // malformed base64 → fall through to 401
+    if (decoded.includes(":") && decoded.slice(decoded.indexOf(":") + 1) === password) return NextResponse.next();
   }
   return new NextResponse("Authentication required", {
     status: 401,

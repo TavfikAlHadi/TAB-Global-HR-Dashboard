@@ -1,6 +1,6 @@
 # TAB Global HR Dashboard — UI Page Guide
 
-Reference for every page and module in the dashboard: what each screen shows, who sees it, where its data comes from, and which components build it. Reflects the **Phase 1 prototype** (dashboard home live, other modules stubbed).
+Reference for every page and module in the dashboard: what each screen shows, who sees it, where its data comes from, and which components build it. Reflects the **Phase 1 prototype**: dashboard home, Employees directory and Leave & Attendance live (read-only, actions stubbed); other modules are placeholders.
 
 ---
 
@@ -51,8 +51,8 @@ Every page under `app/(dashboard)/` renders inside the same shell ([layout.tsx](
 | State | Where | What renders |
 |---|---|---|
 | Loading | [loading.tsx](../app/(dashboard)/loading.tsx) | Pulsing skeleton: title bar, 4 KPI tiles, one large panel |
-| Unknown route | `[section]/page.tsx` | `notFound()` → Next.js 404 |
-| Auth (preview) | [proxy.ts](../proxy.ts) | HTTP Basic prompt when `DEMO_PASSWORD` is set; any username, password checked |
+| Unknown route | `[section]/page.tsx` → [not-found.tsx](../app/(dashboard)/not-found.tsx) | `notFound()` → "Page not found" inside the shell with a link home. HTTP status stays 200 because the page streams (Next adds `noindex`) |
+| Auth (preview) | [proxy.ts](../proxy.ts) | HTTP Basic prompt when `DEMO_PASSWORD` is set; any username, password checked; malformed headers get 401 |
 | Toasts | Root layout | Sonner, top-right, light theme |
 
 ---
@@ -95,8 +95,8 @@ The page subtitle shows the active scope, e.g. "Singapore · TABInsights" or "Al
 | # | Module | Route | Icon | Phase | Status |
 |---|---|---|---|---|---|
 | 4.1 | Dashboard | `/` | LayoutDashboard | 1 | **Live** |
-| 4.2 | Employees | `/employees` | Users | 4 | **Live** (read-only) |
-| 4.3 | Leave & Attendance | `/whos-out` | CalendarOff | 4 | **Live** (approvals stubbed) |
+| 4.2 | Employees | `/employees` | Users | 4 (editing) | **Live** (read-only) |
+| 4.3 | Leave & Attendance | `/whos-out` | CalendarOff | 4 (approvals) | **Live** (approvals stubbed) |
 | 4.4 | Recruitment | `/recruitment` | Briefcase | 6 | Placeholder (not scoped) |
 | 4.5 | SOP Library | `/sops` | BookOpen | 5 | Placeholder |
 | 4.6 | Events & Forums | `/events` | CalendarDays | 5 | Placeholder |
@@ -273,6 +273,11 @@ Colour shows good/bad; arrow shows direction. They differ when "down is good" (f
 | `WhosOutPanel` | 5-day strip, today outlined in primary. List: plane icon (red) = leave, home icon (teal) = WFH | "Everyone is in today." |
 | `LeaveBalancePanel` | Days left of entitled, progress bar (`role="img"` with label), pending list | "None." for pending |
 | `AnnouncementsPanel` | Primary left border, title, body, date · office | — |
+| `ApprovalsPanel` | Pending requests; first gets Approve/Decline, next 3 Review (all toast) | — |
+| `OutThisWeekPanel` | Approved leave this week, first 5, with weekday span | — |
+| `NewJoinersPanel` | Newest 4 hires (90 days), Onboarding / Joined / Starts badge | — |
+| `LeaveRequestsPanel` | Pending requests with day count and days left after; Approve/Decline toast | — |
+| `TeamCalendar` | Mon–Fri grid, one row per person away, bars span consecutive days, pending dashed | — |
 
 ### Charts
 
@@ -314,12 +319,12 @@ Brand assets (logos, brand guide PDF) are in [Assets/](../Assets/).
 
 | Breakpoint | Change |
 |---|---|
-| < 768px (`md`) | Sidebar hidden; top bar wraps; page padding 16px |
-| ≥ 768px | Sidebar shown; padding 24px; KPI grid 3 columns |
+| < 768px (`md`) | Sidebar hidden, bottom tab bar instead; top bar wraps; page padding 16px; KPI grid 2 columns |
+| ≥ 768px | Sidebar shown; padding 32px |
 | ≥ 1024px (`lg`) | Panel rows split 2/3 + 1/3 |
-| ≥ 1280px (`xl`) | KPI grid 6 columns |
+| ≥ 1280px (`xl`) | KPI grid 4 columns |
 
-No mobile nav yet — below `md` modules are reachable only by URL.
+The bottom tab bar holds Home, People, Leave and SOPs only; the other modules are desktop-only until a "More" sheet exists.
 
 ---
 

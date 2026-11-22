@@ -2,7 +2,8 @@ import "server-only";
 import { cache } from "react";
 import { db } from "./supabase";
 import { isStale } from "./sop";
-import { BRANDS, DEMO_EMPLOYEE_EMAIL, DEPARTMENTS, OFFICES, type Status } from "./constants";
+import { BRANDS, DEMO_EMPLOYEE_EMAIL, DEPARTMENTS, OFFICES } from "./constants";
+import { activeOn, attrition, directoryStatus, outCounts, shift } from "./metrics";
 
 // The only module the UI imports for data. Phase 2 swaps the client in ./supabase; these signatures stay.
 
@@ -22,7 +23,6 @@ type Employee = {
 
 /** Company "today" in Singapore time (head office), as YYYY-MM-DD. */
 export const todayISO = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Singapore" });
-const shift = (iso: string, days: number) => new Date(Date.parse(iso) + days * 864e5).toISOString().slice(0, 10);
 const monthEnd = (y: number, m: number) => new Date(Date.UTC(y, m + 1, 0)).toISOString().slice(0, 10);
 
 function check<T>(r: { data: T | null; error: unknown }, what: string): T {
@@ -36,7 +36,6 @@ const allEmployees = cache(async (): Promise<Employee[]> =>
 );
 const inFilter = (e: { office_id: string; brand_id: string }, f: Filter) =>
   (!f.office || e.office_id === f.office) && (!f.brand || e.brand_id === f.brand);
-const activeOn = (e: Employee, day: string) => e.hire_date <= day && (!e.exit_date || e.exit_date > day);
 
 async function employees(f: Filter) {
   return (await allEmployees()).filter((e) => inFilter(e, f));
@@ -57,24 +56,13 @@ export async function getAbsences(f: Filter, from: string, to: string, status: "
 }
 export type Absence = Awaited<ReturnType<typeof getAbsences>>[number];
 
-const outCounts = (rows: Absence[], day: string) => {
-  const on = rows.filter((a) => a.start_date <= day && a.end_date >= day);
-  const leave = new Set(on.filter((a) => a.kind === "leave").map((a) => a.employee_id));
-  const wfh = new Set(on.filter((a) => a.kind === "wfh" && !leave.has(a.employee_id)).map((a) => a.employee_id));
-  return { leave: leave.size, wfh: wfh.size };
-};
-
 export async function getKpis(f: Filter) {
   const today = todayISO();
   const people = await employees(f);
   const total = people.filter((e) => activeOn(e, today)).length;
   const totalMonthAgo = people.filter((e) => activeOn(e, shift(today, -30))).length;
 
-  // Leavers in the last 12 months over average headcount across that window.
-  const yearAgo = shift(today, -365);
-  const leavers = people.filter((e) => e.exit_date && e.exit_date > yearAgo && e.exit_date <= today).length;
-  const avgHeadcount = (total + people.filter((e) => activeOn(e, yearAgo)).length) / 2;
-  const attrition = avgHeadcount ? Math.round((leavers / avgHeadcount) * 1000) / 10 : 0;
+  const { leavers, pct } = attrition(people, today);
 
   const lastWeek = shift(today, -7);
   const absences = await getAbsences(f, lastWeek, today);
@@ -90,7 +78,7 @@ export async function getKpis(f: Filter) {
     total, totalDelta: total - totalMonthAgo,
     out, outDelta: out.leave + out.wfh - (outLastWeek.leave + outLastWeek.wfh),
     openPositions: openings.length, openedLast30: openings.filter((o) => o.opened_at >= shift(today, -30)).length,
-    attrition, leavers,
+    attrition: pct, leavers,
   };
 }
 
@@ -167,14 +155,10 @@ export async function getLeaveBalance(employeeId: string) {
 /** Current and incoming staff with a derived status. Probation = first 90 days. */
 export async function getDirectory(f: Filter) {
   const today = todayISO();
-  const probationFrom = shift(today, -90);
   const onLeave = new Set((await getAbsences(f, today, today)).filter((a) => a.kind === "leave").map((a) => a.employee_id));
   return (await employees(f))
     .filter((e) => !e.exit_date || e.exit_date > today)
-    .map((e) => {
-      const status: Status = e.exit_date ? "Notice period" : e.hire_date > today ? "Starting soon" : onLeave.has(e.id) ? "On leave" : e.hire_date >= probationFrom ? "Probation" : "Active";
-      return { ...e, status };
-    })
+    .map((e) => ({ ...e, status: directoryStatus(e, today, onLeave.has(e.id)) }))
     .sort((a, b) => a.full_name.localeCompare(b.full_name));
 }
 export type DirectoryRow = Awaited<ReturnType<typeof getDirectory>>[number];

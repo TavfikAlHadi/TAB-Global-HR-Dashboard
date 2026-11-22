@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { NAV } from "@/lib/nav";
 
+// Unknown sections call notFound(), which the dev-only instant-navigation validator reports as an error.
+export const instant = false;
+
 export default async function ComingSoon({ params }: PageProps<"/[section]">) {
   const { section } = await params;
   const item = NAV.find((n) => n.href === `/${section}`);
