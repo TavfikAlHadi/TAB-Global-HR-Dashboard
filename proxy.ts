@@ -7,6 +7,7 @@ const PUBLIC = ["/login", "/auth/callback"];
 // Pages re-check identity server-side (lib/role.ts); this is the first gate, not the only one.
 export async function proxy(req: NextRequest) {
   let res = NextResponse.next({ request: req });
+  const cacheHeaders: Record<string, string> = {}; // supplied on the first setAll only; re-applied whenever res is rebuilt
   const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
     cookies: {
       getAll: () => req.cookies.getAll(),
@@ -14,7 +15,8 @@ export async function proxy(req: NextRequest) {
         list.forEach(({ name, value }) => req.cookies.set(name, value));
         res = NextResponse.next({ request: req });
         list.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
-        Object.entries(headers).forEach(([k, v]) => res.headers.set(k, v));
+        Object.assign(cacheHeaders, headers);
+        Object.entries(cacheHeaders).forEach(([k, v]) => res.headers.set(k, v));
       },
     },
   });
