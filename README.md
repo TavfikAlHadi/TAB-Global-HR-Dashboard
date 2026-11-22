@@ -1,7 +1,7 @@
 # TAB Global HR Dashboard
 
 Internal HR dashboard for TAB Global (Phase 2: Microsoft 365 sign-in, demo data). Next.js 16 App Router + Supabase.
-Page-by-page reference: [docs/UI-PAGE-GUIDE.md](docs/UI-PAGE-GUIDE.md).
+Page-by-page reference: [docs/UI-PAGE-GUIDE.md](docs/UI-PAGE-GUIDE.md). Module requirements, UX flows and Supabase design: [docs/modules/](docs/modules/README.md).
 
 ## Setup
 
