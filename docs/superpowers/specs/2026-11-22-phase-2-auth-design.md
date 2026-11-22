@@ -42,21 +42,19 @@ Staff sign in with their Microsoft 365 work account; their role and data access 
 4. Dashboard layout resolves the signed-in employee (see below). No match → redirect to `/no-access`.
 5. `/no-access` — public-to-signed-in page: "Your Microsoft account (<email>) isn't linked to an active
    employee record. Ask HR to add you." plus a Sign out button.
-6. Sign out — server action `auth.signOut()` → redirect to `/login`. Button in sidebar footer,
-   where the "View as" switcher was.
+6. Sign out — server action `auth.signOut()` → redirect to `/login`. Button in the top bar,
+   where the "View as" switcher was (visible on mobile too).
 
 ### Server modules
 
 - `lib/supabase.ts` — `db()` becomes a per-request server client (`createServerClient` from
   `@supabase/ssr`, anon key, cookies from `next/headers`), wrapped in React `cache()` so one client per
   request. Signature unchanged, so `lib/data.ts` callers are unaffected.
-- `lib/role.ts` — `currentEmployee()` (cached): gets the auth user, selects
-  `id, full_name, title, office_id, department_id, role` from `employees` where `email` ilike the
-  user's email and active; returns `null` if none. `currentRole()` returns its `role`.
+- `lib/role.ts` — `currentEmployee()` (cached): calls SQL `current_employee_id()` via RPC (matching
+  rules live only in SQL), then selects `id, full_name, title, office_id, department_id, role`.
+  No match → `redirect("/no-access")`. `currentRole()` returns its `role`.
   `canViewAll` / `canEditSops` unchanged (UI gating stays; RLS is the backstop).
 - `lib/data.ts` — `getDemoEmployee()` removed; the Employee view uses `currentEmployee()`.
-- `lib/auth-match.ts` — pure helpers `normalizeEmail(email)` and `isActive(exit_date, today)`
-  (no `server-only`), so they can be unit-tested; `lib/role.ts` uses them.
 
 ### Environment
 
@@ -77,10 +75,10 @@ to redirect URLs. Entra app redirect URI = Supabase's `/auth/v1/callback`.
 Helpers (`security definer`, `stable`, `search_path = public`), so policies don't recurse into
 `employees` RLS:
 
-- `current_employee_id() returns uuid` — id of active employee whose lower(email) =
-  lower(`auth.jwt() ->> 'email'`), else null.
-- `current_role_name() returns text` — that employee's role, else null.
-- `is_hr() returns boolean` — role in (`hr_admin`, `super_admin`).
+- `current_employee_id() returns uuid` — id of employee whose lower(email) =
+  lower(`auth.jwt() ->> 'email'`) and `exit_date is null or exit_date >= current_date`, else null.
+- `is_hr() returns boolean` — current employee's role in (`hr_admin`, `super_admin`).
+- `manages(emp uuid) returns boolean` — `emp`'s `manager_id` = current employee.
 
 Grants: `usage` on schema and `select` on all tables to `authenticated`. `anon` gets nothing.
 Execute on the helpers to `authenticated`.
@@ -113,14 +111,14 @@ are removed.
 
 ## Testing
 
-- Unit (`npm test`): `isActive` (null exit date, future, today, past) and email normalisation used
-  for the match.
+- Matching and access rules live in SQL, so the runnable check is `supabase/checks/rls.sql`: run in the
+  SQL editor, it impersonates an employee, an unknown email and HR inside a rolled-back transaction
+  and `assert`s what each can read. Existing `npm test` must still pass.
 - Manual, documented in the plan:
   1. Signed out → any route redirects to `/login`.
   2. Sign in with `SEED_ADMIN_EMAIL` → dashboard as Super Admin.
   3. Set role to `employee` → Employee view shows own balance; directory nav hidden.
-  4. RLS check in SQL editor: `set local role authenticated; set local request.jwt.claims = '{"email":"..."}';`
-     then confirm an employee sees only own `leave_balances` and no others' pending absences.
+  4. `supabase/checks/rls.sql` completes without assertion errors.
   5. Unknown Microsoft account → `/no-access`.
   6. Sign out → back to `/login`.
 - `npm run build` and `npm run lint` pass.
