@@ -42,9 +42,6 @@ export const STALE_DAYS = 90;
 export const STATUSES = ["Active", "On leave", "Probation", "Starting soon", "Notice period"] as const;
 export type Status = (typeof STATUSES)[number];
 
-// Seeded employee the Employee view pretends to be until real login (Phase 2).
-export const DEMO_EMPLOYEE_EMAIL = "mei.ling.tan@tabglobal.example";
-
 const byId = <T extends { id: string; name: string }>(list: readonly T[]) =>
   Object.fromEntries(list.map((x) => [x.id, x.name])) as Record<string, string>;
 export const OFFICE_NAME = byId(OFFICES);

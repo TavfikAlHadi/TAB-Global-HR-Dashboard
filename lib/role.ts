@@ -1,14 +1,25 @@
 import "server-only";
-import { cookies } from "next/headers";
-import { ROLES, type Role } from "./constants";
+import { cache } from "react";
+import { redirect } from "next/navigation";
+import { db } from "./supabase";
+import type { Role } from "./constants";
 
-export const ROLE_COOKIE = "demo_role";
+export type Me = { id: string; full_name: string; title: string; office_id: string; department_id: string; role: Role };
 
-// Phase 1: role comes from the demo switcher cookie. Phase 2: from the signed-in user's employees.role.
-export async function currentRole(): Promise<Role> {
-  const v = (await cookies()).get(ROLE_COOKIE)?.value;
-  return ROLES.some((r) => r.id === v) ? (v as Role) : "hr_admin";
-}
+/** The signed-in, active employee. Matching rules live in SQL (current_employee_id). Unmatched → /no-access. */
+export const currentEmployee = cache(async (): Promise<Me> => {
+  const { data: id } = await db().rpc("current_employee_id");
+  if (!id) redirect("/no-access");
+  const { data, error } = await db()
+    .from("employees")
+    .select("id, full_name, title, office_id, department_id, role")
+    .eq("id", id)
+    .single();
+  if (error || !data) redirect("/no-access");
+  return data as Me;
+});
+
+export const currentRole = async (): Promise<Role> => (await currentEmployee()).role;
 
 export const canViewAll = (r: Role) => r !== "employee";
 export const canEditSops = (r: Role) => r === "hr_admin" || r === "super_admin";

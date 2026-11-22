@@ -1,8 +1,8 @@
 import { connection } from "next/server";
-import { currentRole, canViewAll } from "@/lib/role";
+import { currentRole, currentEmployee, canViewAll } from "@/lib/role";
 import {
   parseFilter, todayISO, getKpis, getHeadcountTrend, getDepartmentSplit, getSops, getEvents,
-  getAbsences, getAnnouncements, getDemoEmployee, getLeaveBalance, getNewJoiners, type Filter,
+  getAbsences, getAnnouncements, getLeaveBalance, getNewJoiners, type Filter,
 } from "@/lib/data";
 import { BRAND_NAME, DEPARTMENT_NAME, OFFICE_NAME } from "@/lib/constants";
 import { fmtDate, workWeek } from "@/lib/utils";
@@ -76,7 +76,7 @@ async function StaffView({ filter }: { filter: Filter }) {
   const days = workWeek(today);
   const from = today < days[0] ? today : days[0];
   const to = today > days[4] ? today : days[4];
-  const me = await getDemoEmployee();
+  const me = await currentEmployee();
   const [leave, absences, sops, events, news] = await Promise.all([
     getLeaveBalance(me.id), getAbsences(filter, from, to), getSops(filter), getEvents(filter), getAnnouncements(filter),
   ]);

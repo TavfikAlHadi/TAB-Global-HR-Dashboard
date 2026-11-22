@@ -2,10 +2,10 @@ import "server-only";
 import { cache } from "react";
 import { db } from "./supabase";
 import { isStale } from "./sop";
-import { BRANDS, DEMO_EMPLOYEE_EMAIL, DEPARTMENTS, OFFICES } from "./constants";
+import { BRANDS, DEPARTMENTS, OFFICES } from "./constants";
 import { activeOn, attrition, directoryStatus, outCounts, shift } from "./metrics";
 
-// The only module the UI imports for data. Phase 2 swaps the client in ./supabase; these signatures stay.
+// The only module the UI imports for data. db() runs every query as the signed-in user (RLS).
 
 export type Filter = { office?: string; brand?: string };
 
@@ -134,12 +134,6 @@ export async function getAnnouncements(f: Filter) {
   if (f.office) q = q.or(`office_id.eq.${f.office},office_id.is.null`);
   return check(await q, "announcements") as { id: string; title: string; body: string; office_id: string | null; published_at: string }[];
 }
-
-/** Phase 1 stand-in for the signed-in employee. */
-export const getDemoEmployee = cache(async () => {
-  const r = check(await db().from("employees").select("id, full_name, title, office_id, department_id").eq("email", DEMO_EMPLOYEE_EMAIL).single(), "demo employee");
-  return r as unknown as { id: string; full_name: string; title: string; office_id: string; department_id: string };
-});
 
 export async function getLeaveBalance(employeeId: string) {
   const year = Number(todayISO().slice(0, 4));

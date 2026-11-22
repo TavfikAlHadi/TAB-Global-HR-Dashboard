@@ -6,7 +6,9 @@ import matter from "gray-matter";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import { OFFICES, BRANDS, DEPARTMENTS, DEMO_EMPLOYEE_EMAIL } from "../lib/constants";
+import { OFFICES, BRANDS, DEPARTMENTS } from "../lib/constants";
+
+const DEMO_EMPLOYEE_EMAIL = "mei.ling.tan@tabglobal.example"; // seeded Mei Ling Tan; sign in with a matching Microsoft account to see the Employee view
 
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
