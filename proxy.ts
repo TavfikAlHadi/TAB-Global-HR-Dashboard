@@ -1,21 +1,27 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-// Shared demo password (HTTP Basic auth) for the Phase 1 preview. Removed in Phase 2 when real login lands.
-// Any username works; only the password is checked. Skipped when DEMO_PASSWORD is unset (local dev).
-export function proxy(req: NextRequest) {
-  const password = process.env.DEMO_PASSWORD;
-  if (!password) return NextResponse.next();
-  const header = req.headers.get("authorization") ?? "";
-  const [scheme, encoded] = header.split(" ");
-  if (scheme === "Basic" && encoded) {
-    let decoded = "";
-    try { decoded = atob(encoded); } catch {} // malformed base64 → fall through to 401
-    if (decoded.includes(":") && decoded.slice(decoded.indexOf(":") + 1) === password) return NextResponse.next();
-  }
-  return new NextResponse("Authentication required", {
-    status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="TAB Global HR Dashboard"' },
+const PUBLIC = ["/login", "/auth/callback"];
+
+// Refreshes the Supabase session cookie and sends signed-out visitors to /login.
+// Pages re-check identity server-side (lib/role.ts); this is the first gate, not the only one.
+export async function proxy(req: NextRequest) {
+  let res = NextResponse.next({ request: req });
+  const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
+    cookies: {
+      getAll: () => req.cookies.getAll(),
+      setAll: (list) => {
+        list.forEach(({ name, value }) => req.cookies.set(name, value));
+        res = NextResponse.next({ request: req });
+        list.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
+      },
+    },
   });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user && !PUBLIC.includes(req.nextUrl.pathname)) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+  return res;
 }
 
-export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] };
+export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|logo.svg).*)"] };
