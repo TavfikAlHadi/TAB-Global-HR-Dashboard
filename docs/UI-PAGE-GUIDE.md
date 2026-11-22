@@ -1,6 +1,6 @@
 # TAB Global HR Dashboard — UI Page Guide
 
-Reference for every page and module in the dashboard: what each screen shows, who sees it, where its data comes from, and which components build it. Reflects the **Phase 1 prototype**: dashboard home, Employees directory and Leave & Attendance live (read-only, actions stubbed); other modules are placeholders.
+Reference for every page and module in the dashboard: what each screen shows, who sees it, where its data comes from, and which components build it. Reflects the **Phase 2 prototype** (Microsoft 365 sign-in): dashboard home, Employees directory and Leave & Attendance live (read-only, actions stubbed); other modules are placeholders.
 
 ---
 
@@ -10,7 +10,7 @@ Every page under `app/(dashboard)/` renders inside the same shell ([layout.tsx](
 
 ```
 ┌──────────────┬──────────────────────────────────────────────────────────┐
-│  TAB logo    │  [Office ▾] [Brand ▾]        [Quick actions…] View as [▾]│  ← top bar
+│  TAB logo    │  [Office ▾] [Brand ▾]        [Quick actions…] [Sign out] │  ← top bar
 │──────────────│──────────────────────────────────────────────────────────│
 │ Dashboard    │                                                          │
 │ Employees    │                                                          │
@@ -21,7 +21,7 @@ Every page under `app/(dashboard)/` renders inside the same shell ([layout.tsx](
 │ Announcements│                                                          │
 │ Settings     │                                                          │
 │              │                                                          │
-│ Phase 1 · demo data                                                     │
+│ Phase 2 · demo data                                                     │
 └──────────────┴──────────────────────────────────────────────────────────┘
 ```
 
@@ -34,7 +34,7 @@ Every page under `app/(dashboard)/` renders inside the same shell ([layout.tsx](
 | Items | Driven by `NAV` in [lib/nav.ts](../lib/nav.ts) — add a module there and it appears here |
 | Active state | `bg-sidebar-accent` + `font-medium`, `aria-current="page"`. Dashboard matches `/` exactly; others match by prefix |
 | Filter carry-over | Links keep the current query string, so office/brand filters persist across modules |
-| Footer | Settings link, then "Phase 1 prototype · demo data" |
+| Footer | Settings link, then "Phase 2 · demo data" |
 
 ### 1.2 Top bar — [topbar-controls.tsx](../components/topbar-controls.tsx)
 
@@ -44,7 +44,7 @@ Every page under `app/(dashboard)/` renders inside the same shell ([layout.tsx](
 | **Brand filter** | Select: All brands + 7 TAB brands. Writes `?brand=tab` etc. | Everyone |
 | **Quick actions** | Add Employee, Post Job, Approve Leave, New SOP. Each currently shows a toast: "*X* arrives in Phase *N*." | Manager, HR Admin, Super Admin |
 | ↳ New SOP | Shown only when the role can edit SOPs | HR Admin, Super Admin |
-| **View as** | Demo role switcher. Sets `demo_role` cookie via `setRole` server action, then refreshes | Everyone (Phase 1 only) |
+| **Sign out** | `signOut` server action; ends the Supabase session → `/login` | Everyone |
 
 ### 1.3 Global states
 
@@ -52,14 +52,16 @@ Every page under `app/(dashboard)/` renders inside the same shell ([layout.tsx](
 |---|---|---|
 | Loading | [loading.tsx](../app/(dashboard)/loading.tsx) | Pulsing skeleton: title bar, 4 KPI tiles, one large panel |
 | Unknown route | `[section]/page.tsx` → [not-found.tsx](../app/(dashboard)/not-found.tsx) | `notFound()` → "Page not found" inside the shell with a link home. HTTP status stays 200 because the page streams (Next adds `noindex`) |
-| Auth (preview) | [proxy.ts](../proxy.ts) | HTTP Basic prompt when `DEMO_PASSWORD` is set; any username, password checked; malformed headers get 401 |
+| Auth | [proxy.ts](../proxy.ts) | Refreshes the Supabase session and redirects signed-out requests to `/login` (except `/login`, `/auth/callback`) |
+| Sign-in | [app/login/page.tsx](../app/login/page.tsx) | Centred card with a "Sign in with Microsoft" button; you land here when signed out or after Sign out. Failed callbacks return here with an error |
+| No access | [app/no-access/page.tsx](../app/no-access/page.tsx) | Shown when the Microsoft login has no active `employees` row matching its email: displays the signed-in email and a Sign out button |
 | Toasts | Root layout | Sonner, top-right, light theme |
 
 ---
 
 ## 2. Roles and visibility
 
-Role comes from the `demo_role` cookie in Phase 1 (default **HR Admin**); Phase 2 moves it to the signed-in user's `employees.role`. Rules live in [lib/role.ts](../lib/role.ts).
+Role comes from the signed-in user's `employees.role` (via `current_employee_id()`); RLS enforces data access. Rules live in [lib/role.ts](../lib/role.ts).
 
 | Role | Dashboard view | Quick actions | New SOP |
 |---|---|---|---|
@@ -156,7 +158,7 @@ A person on leave who also logged WFH counts once, as leave.
 
 #### Staff view (Employee)
 
-Pretends to be the seeded demo employee (`DEMO_EMPLOYEE_EMAIL`) until real login.
+Shown to the signed-in employee; leave balance and greeting are theirs.
 
 ```
 Good day, <first name>
@@ -294,7 +296,7 @@ shadcn components on Base UI: `Badge`, `Button`, `Card`, `Input`, `Sonner`. Icon
 
 ## 6. Design tokens
 
-Defined in [app/globals.css](../app/globals.css). Font: **Public Sans** (`--font-sans`). Light theme only in Phase 1.
+Defined in [app/globals.css](../app/globals.css). Font: **Public Sans** (`--font-sans`). Light theme only.
 
 | Token | Value | Use |
 |---|---|---|

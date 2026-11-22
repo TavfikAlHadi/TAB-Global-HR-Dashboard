@@ -1,5 +1,5 @@
 // Seeds Supabase with fictional TAB Global demo data. Idempotent: wipes and re-inserts.
-// Run: npm run seed   (needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY in .env.local)
+// Run: npm run seed   (needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY; optional SEED_ADMIN_EMAIL)
 // ponytail: dates are relative to the day you seed; rerun the seed to refresh the demo.
 import { createClient } from "@supabase/supabase-js";
 import matter from "gray-matter";
@@ -8,7 +8,6 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { OFFICES, BRANDS, DEPARTMENTS } from "../lib/constants";
 
-const DEMO_EMPLOYEE_EMAIL = "mei.ling.tan@tabglobal.example"; // seeded Mei Ling Tan; sign in with a matching Microsoft account to see the Employee view
 
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -91,7 +90,7 @@ const named: Omit<Emp, "id" | "email" | "manager_id" | "exit_date">[] = [
 function buildEmployees(): Emp[] {
   const heads: Record<string, string> = {};
   const out: Emp[] = named.map((n) => {
-    const e: Emp = { ...n, id: randomUUID(), email: n.full_name === "Mei Ling Tan" ? DEMO_EMPLOYEE_EMAIL : mkEmail(n.full_name), manager_id: null, exit_date: null };
+    const e: Emp = { ...n, id: randomUUID(), email: n.full_name === "Grace Liu" && process.env.SEED_ADMIN_EMAIL ? process.env.SEED_ADMIN_EMAIL.trim().toLowerCase() : mkEmail(n.full_name), manager_id: null, exit_date: null };
     emails.add(e.email);
     if (n.role !== "employee" && n.full_name !== "Nur Hidayah") heads[n.department_id] = e.id;
     return e;
