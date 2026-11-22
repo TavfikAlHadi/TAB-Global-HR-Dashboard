@@ -6,7 +6,7 @@ begin;
 select set_config('request.jwt.claims', json_build_object('email', (
   select upper(email) from employees  -- upper(): proves case-insensitive match
   where role = 'employee' and exit_date is null and manager_id is not null
-    and not exists (select 1 from employees r where r.manager_id = employees.id) limit 1))::text, true);
+    and not exists (select 1 from employees r where r.manager_id = employees.id) limit 1), 'app_metadata', json_build_object('provider','azure'))::text, true);
 set local role authenticated;
 do $$ begin
   assert current_employee_id() is not null, 'employee matched by email';
@@ -18,7 +18,7 @@ end $$;
 reset role;
 
 -- 2. Unknown account
-select set_config('request.jwt.claims', '{"email":"nobody@example.com"}', true);
+select set_config('request.jwt.claims', json_build_object('email', 'nobody@example.com', 'app_metadata', json_build_object('provider','azure'))::text, true);
 set local role authenticated;
 do $$ begin
   assert current_employee_id() is null, 'unknown email not matched';
@@ -29,7 +29,7 @@ reset role;
 
 -- 3. Leaver (exit date in the past) gets nothing
 select set_config('request.jwt.claims', json_build_object('email', (
-  select email from employees where exit_date < current_date limit 1))::text, true);
+  select email from employees where exit_date < current_date limit 1), 'app_metadata', json_build_object('provider','azure'))::text, true);
 set local role authenticated;
 do $$ begin
   assert current_employee_id() is null, 'leaver not matched';
@@ -38,11 +38,20 @@ reset role;
 
 -- 4. HR admin sees everyone's balances and pending leave
 select set_config('request.jwt.claims', json_build_object('email', (
-  select email from employees where role = 'hr_admin' and exit_date is null limit 1))::text, true);
+  select email from employees where role = 'hr_admin' and exit_date is null limit 1), 'app_metadata', json_build_object('provider','azure'))::text, true);
 set local role authenticated;
 do $$ begin
   assert is_hr(), 'hr_admin is HR';
   assert (select count(distinct employee_id) from leave_balances) > 1, 'HR sees all balances';
+end $$;
+reset role;
+
+-- 5. Known active employee email via a non-Azure provider is not matched
+select set_config('request.jwt.claims', json_build_object('email', (
+  select email from employees where exit_date is null limit 1), 'app_metadata', json_build_object('provider','email'))::text, true);
+set local role authenticated;
+do $$ begin
+  assert current_employee_id() is null, 'non-Azure login not matched';
 end $$;
 reset role;
 

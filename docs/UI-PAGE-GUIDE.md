@@ -149,7 +149,7 @@ A person on leave who also logged WFH counts once, as leave.
 | Panel | Component | Content |
 |---|---|---|
 | Headcount by department | `DepartmentBars` | Horizontal bars, largest first, count per department |
-| Pending approvals | `ApprovalsPanel` | Pending absences from today on. First gets Approve/Decline, next 3 get Review; all toast "arrive in Phase 4". Badge = total open |
+| Pending approvals | `ApprovalsPanel` | Pending absences from today on. First gets Approve/Decline, next 3 get Review; all toast "arrive in Phase 4". Badge = total open. Managers see only their direct reports' pending requests (RLS); HR/super admins see all |
 | Out this week | `OutThisWeekPanel` | Approved leave overlapping Mon–Fri (next week on weekends), first 5, with weekday span |
 | New joiners | `NewJoinersPanel` | Hired in last 90 days, newest 4. Badge: Onboarding (≤30 days), Joined / Starts *date* |
 | Coming up | `EventsPanel` | First 4 upcoming events |
@@ -221,7 +221,7 @@ Week of 23–27 November 2026
 |---|---|---|
 | Today tiles | `KpiCard` (no trend) | In office = active headcount − leave − WFH. Pending tile manager/HR only |
 | Team calendar | `TeamCalendar` | Approved + (manager/HR) pending absences. Annual = brand blue, sick = red, other = amber, WFH = indigo, pending = dashed. Leave beats WFH on overlap |
-| Leave requests | `LeaveRequestsPanel` | Every pending request from today on, with dates, day count and days left after (from `leave_balances`). Approve / Decline toast "arrive in Phase 4" — the schema has no declined status yet |
+| Leave requests | `LeaveRequestsPanel` | Every pending request from today on, with dates, day count and days left after (from `leave_balances`). Managers see only their direct reports' pending requests (RLS); HR/super admins see all. Approve / Decline toast "arrive in Phase 4" — the schema has no declined status yet |
 
 ### 4.4 Recruitment — `/recruitment` (Phase 6)
 

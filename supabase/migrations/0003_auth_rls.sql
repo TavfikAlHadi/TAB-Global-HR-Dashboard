@@ -1,10 +1,14 @@
 -- Phase 2: signed-in users read data through RLS. Matching a login to an employee lives only here.
 -- security definer so policies can look up employees without recursing into employees' own RLS.
 
+-- Logins are matched case-insensitively, so the email must be unique that way too.
+create unique index employees_email_lower_key on employees (lower(email));
+
 create or replace function public.current_employee_id() returns uuid
 language sql stable security definer set search_path = public as $$
   select id from employees
   where lower(email) = lower(auth.jwt() ->> 'email')
+    and auth.jwt() -> 'app_metadata' ->> 'provider' = 'azure'
     and (exit_date is null or exit_date >= current_date)
   limit 1
 $$;

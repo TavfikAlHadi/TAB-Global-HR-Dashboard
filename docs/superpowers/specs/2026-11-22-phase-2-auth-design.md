@@ -117,7 +117,7 @@ are removed.
 - Manual, documented in the plan:
   1. Signed out → any route redirects to `/login`.
   2. Sign in with `SEED_ADMIN_EMAIL` → dashboard as Super Admin.
-  3. Set role to `employee` → Employee view shows own balance; directory nav hidden.
+  3. Set role to `employee` → Employee view shows own balance; Staff view shown; directory status column hidden.
   4. `supabase/checks/rls.sql` completes without assertion errors.
   5. Unknown Microsoft account → `/no-access`.
   6. Sign out → back to `/login`.

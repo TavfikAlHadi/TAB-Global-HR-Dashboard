@@ -22,7 +22,10 @@ export async function proxy(req: NextRequest) {
   });
   const { data: { user } } = await supabase.auth.getUser();
   if (!user && !PUBLIC.includes(req.nextUrl.pathname)) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    const redirect = NextResponse.redirect(new URL("/login", req.url));
+    res.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    Object.entries(cacheHeaders).forEach(([k, v]) => redirect.headers.set(k, v));
+    return redirect;
   }
   return res;
 }

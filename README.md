@@ -9,7 +9,7 @@ Page-by-page reference: [docs/UI-PAGE-GUIDE.md](docs/UI-PAGE-GUIDE.md).
 2. Create a Supabase project, then run the migrations in order in the SQL editor (or `supabase db push`):
    - `supabase/migrations/0001_init.sql`
    - `supabase/migrations/0002_service_role_grants.sql`
-   - `supabase/migrations/0003_auth_rls.sql`
+   - `supabase/migrations/0003_auth_rls.sql` (not re-runnable: create policy/index; run once)
 3. Copy `.env.example` to `.env.local` and fill in `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
    `SUPABASE_SERVICE_ROLE_KEY` (seed only) and `SEED_ADMIN_EMAIL` (your work email)
    (Supabase → Project Settings → API). Never commit `.env.local`; the service-role key bypasses RLS.
@@ -19,6 +19,7 @@ Page-by-page reference: [docs/UI-PAGE-GUIDE.md](docs/UI-PAGE-GUIDE.md).
    2. Entra → Token configuration → add optional claims `email` and `xms_edov` to the ID token (Supabase needs a verified email).
    3. Supabase → Authentication → Providers → Azure: client ID, secret, tenant URL `https://login.microsoftonline.com/<tenant-id>`.
    4. Supabase → Authentication → URL Configuration: add `http://localhost:3000/auth/callback` and `https://<netlify-site>/auth/callback` to Redirect URLs.
+   5. Supabase → Authentication → Providers: disable Email (and every provider except Azure). Identity is only accepted from Azure logins.
 5. Seed demo data: `npm run seed`. It wipes and re-inserts everything, with dates relative to today,
    so rerun it to refresh the demo. Then run `supabase/checks/rls.sql` in the SQL editor; expect `RLS check passed`.
 6. Run: `npm run dev` → http://localhost:3000
