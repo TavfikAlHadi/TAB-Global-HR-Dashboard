@@ -148,7 +148,7 @@ A person on leave who also logged WFH counts once, as leave.
 
 | Panel | Component | Content |
 |---|---|---|
-| Headcount by department | `DepartmentPie` | Pie + legend listing count and % per department (empty departments omitted) |
+| Headcount by department | `DepartmentPie` | Doughnut with total in the centre + legend listing count and % per department (empty departments omitted) |
 | Pending approvals | `ApprovalsPanel` | Pending absences from today on. First gets Approve/Decline, next 3 get Review; all toast "arrive in Phase 4". Badge = total open. Managers see only their direct reports' pending requests (RLS); HR/super admins see all |
 | Out this week | `OutThisWeekPanel` | Approved leave overlapping Mon–Fri (next week on weekends), first 5, with weekday span |
 | New joiners | `NewJoinersPanel` | Hired in last 90 days, newest 4. Badge: Onboarding (≤30 days), Joined / Starts *date* |
@@ -286,9 +286,9 @@ Colour shows good/bad; arrow shows direction. They differ when "down is good" (f
 | Component | Library | Notes |
 |---|---|---|
 | `HeadcountChart` | Recharts `AreaChart` | 256px tall, `--chart-1` stroke with fading gradient, y-axis from 0, integer ticks |
-| `DepartmentPie` | Recharts `PieChart` | Fixed colour per department (never by rank), legend doubles as data table so colour is never the only cue |
+| `DepartmentPie` | Recharts `PieChart` (doughnut) | Fixed colour per department (never by rank), legend doubles as data table so colour is never the only cue |
 
-Department colours: Editorial `#004EA8`, Research `#0096A8`, Events `#B8902F`, Sales `#3A7BC8`, Marketing `#2E8B57`, Technology `#7A4FA0`, Finance & Admin `#C8642A`, Management `#5A6472`.
+Department colours (soft, validated as a set for colour-blind separation; re-validate if the department order changes): Editorial `#5182C1`, Research `#E1A263`, Events `#179A8E`, Sales `#D496CE`, Marketing `#6B9C4F`, Technology `#9E9BE4`, Finance & Admin `#A97E2C`, Management `#E69089`.
 
 ### Primitives — `components/ui/`
 
