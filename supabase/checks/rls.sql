@@ -1,4 +1,4 @@
--- RLS check. Paste into Supabase SQL editor after seeding + migration 0003.
+-- RLS check. Paste into Supabase SQL editor after seeding + migrations 0003 and 0004.
 -- Impersonates users inside a transaction and rolls back. Any failed assert aborts with its message.
 begin;
 
@@ -46,12 +46,30 @@ do $$ begin
 end $$;
 reset role;
 
--- 5. Known active employee email via a non-Azure provider is not matched
-select set_config('request.jwt.claims', json_build_object('email', (
-  select email from employees where exit_date is null limit 1), 'app_metadata', json_build_object('provider','email'))::text, true);
+-- 5. Email + password login: matched only when Supabase has confirmed the address
+insert into auth.users (id, email, email_confirmed_at)
+select '00000000-0000-0000-0000-0000000000e1', email, null from employees
+where exit_date is null and lower(email) not in (select lower(email) from auth.users where email is not null) limit 1;
+select set_config('request.jwt.claims', json_build_object('sub', '00000000-0000-0000-0000-0000000000e1', 'email', (
+  select email from auth.users where id = '00000000-0000-0000-0000-0000000000e1'), 'app_metadata', json_build_object('provider','email'))::text, true);
 set local role authenticated;
 do $$ begin
-  assert current_employee_id() is null, 'non-Azure login not matched';
+  assert current_employee_id() is null, 'unconfirmed email login not matched';
+end $$;
+reset role;
+update auth.users set email_confirmed_at = now() where id = '00000000-0000-0000-0000-0000000000e1';
+set local role authenticated;
+do $$ begin
+  assert current_employee_id() is not null, 'confirmed email login matched';
+end $$;
+reset role;
+
+-- 6. Any other provider is not matched
+select set_config('request.jwt.claims', json_build_object('email', (
+  select email from employees where exit_date is null limit 1), 'app_metadata', json_build_object('provider','google'))::text, true);
+set local role authenticated;
+do $$ begin
+  assert current_employee_id() is null, 'other provider not matched';
 end $$;
 reset role;
 

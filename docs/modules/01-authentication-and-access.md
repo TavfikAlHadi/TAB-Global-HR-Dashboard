@@ -1,14 +1,15 @@
 # 1. Authentication & Access
 
-**Phase 2 · Live** · Routes: `/login`, `/auth/callback`, `/no-access` · Code: [proxy.ts](../../proxy.ts), [app/actions.ts](../../app/actions.ts), [lib/role.ts](../../lib/role.ts), [0003_auth_rls.sql](../../supabase/migrations/0003_auth_rls.sql)
+**Phase 2 · Live (email + password; Microsoft 365 later)** · Routes: `/login`, `/auth/callback`, `/no-access` · Code: [proxy.ts](../../proxy.ts), [app/actions.ts](../../app/actions.ts), [lib/role.ts](../../lib/role.ts), [0003_auth_rls.sql](../../supabase/migrations/0003_auth_rls.sql)
 
 ## Purpose
 
-Every employee signs in with their own identity. What they can see and do is decided by their `employees` row and enforced in Postgres, not just hidden in the UI.
+Every employee signs in with their own account. What they can see and do is decided by their `employees` row and enforced in Postgres, not just hidden in the UI.
 
 ## Context
 
-- TAB Global staff all have Microsoft 365 accounts, so Microsoft (Entra ID) single sign-on means no new password to remember and leavers lose access when IT disables their M365 account.
+- **Now: email + password.** Supabase Auth's Email provider with sign-ups disabled; HR/admin creates each user in Supabase with their work email. Chosen as an interim step so the dashboard can go live before the Microsoft (Entra ID) app registration is done.
+- **Later: Microsoft 365.** Staff all have M365 accounts, so single sign-on removes the extra password and leavers lose access when IT disables their M365 account. The SQL already accepts Azure logins; only the button and provider setup are missing.
 - HR owns the list of who works here (`employees`). Access follows that list: no row, or an `exit_date` in the past, means no access — even with a valid Microsoft login.
 - Phase 1 used a shared demo password and a "View as" role switcher. Both are removed.
 
@@ -16,16 +17,17 @@ Every employee signs in with their own identity. What they can see and do is dec
 
 | # | Requirement | Status |
 |---|---|---|
-| A1 | Sign in with Microsoft 365 via Supabase Auth, Azure provider | Done |
+| A1 | Sign in with email + password via Supabase Auth; users created by an admin, sign-ups off | Done (interim) |
+| A1b | Sign in with Microsoft 365 via Supabase Auth, Azure provider | Later |
 | A2 | Match login to employee by email, case-insensitive (`lower(email)` unique index) | Done |
-| A3 | Only logins whose provider is `azure` are trusted for matching | Done |
+| A3 | Only `azure` logins, or `email` logins whose address Supabase has confirmed, are trusted for matching | Done |
 | A4 | Leavers (`exit_date < today`) are refused, even mid-session on next request | Done |
 | A5 | Signed-out requests redirect to `/login`; session refreshed on every request | Done |
 | A6 | Login without matching employee → `/no-access` showing the email used | Done |
 | A7 | Role = `employees.role`; RLS policies on every table | Done |
 | A8 | Sign out from the top bar on every page, including mobile | Done |
 | A9 | Auth responses never CDN-cached (`Cache-Control: private, no-store`) | Done |
-| A10 | Non-M365 users (contractors) can sign in | Open — see below |
+| A10 | Non-M365 users (contractors) can sign in | Covered by email + password; keep after M365 if needed |
 
 ## User experience flow
 
@@ -34,31 +36,32 @@ Every employee signs in with their own identity. What they can see and do is dec
 ```
 Open dashboard URL
   └─► proxy.ts: no session ─► redirect /login
-        └─► "Sign in with Microsoft" ─► Microsoft login (or silent if already signed in to M365)
-              └─► /auth/callback?code=… ─► exchange code for session cookie
-                    └─► /  ─► currentEmployee(): email matches active employee
+        └─► email + password ─► signInWithPassword (server action) ─► session cookie
+              └─► /  ─► currentEmployee(): confirmed email matches active employee
                           ├─ role = employee ─► Staff view
                           └─ role ≥ manager  ─► HR overview
 ```
 
+0. Admin creates the user in Supabase (Authentication → Users → Add user, work email, password, Auto Confirm) and shares the password with them directly.
 1. User opens the link (bookmark, Teams tab, email).
-2. Sees a centred TAB-branded card: logo, one sentence, **Sign in with Microsoft**.
-3. Microsoft handles credentials and MFA. On a work laptop this is usually one click.
-4. Lands on the dashboard; the greeting uses their first name, so they know it's their account.
+2. Sees a centred TAB-branded card: logo, **Email**, **Password**, **Sign in**.
+3. Lands on the dashboard; the greeting uses their first name, so they know it's their account.
+
+With Microsoft 365 (later), step 2 becomes one **Sign in with Microsoft** button and the code returns via `/auth/callback`.
 
 ### Not on the employee list
 
-1. Microsoft sign-in succeeds, but no active `employees` row matches the email.
+1. Sign-in succeeds, but no active `employees` row matches the email.
 2. `/no-access`: "Your Microsoft account (*name@tab.global*) isn't linked to an active employee record. Ask HR to add you." + **Sign out**.
 3. HR adds or fixes the row (Phase 3: Admin → Users); the user signs in again.
 
 ### Sign-in fails
 
-Callback error (cancelled consent, expired code) → `/login?error=signin` with a short message and the same button. No technical detail shown.
+Wrong email or password → `/login?error=signin` with "Wrong email or password. Please try again." No detail about which one was wrong. (Microsoft later: callback errors land on the same message.)
 
 ### Leaving the company
 
-HR sets `exit_date`. From that date `current_employee_id()` returns null; the next page load sends the user to `/no-access`. IT disabling the M365 account stops new sign-ins too.
+HR sets `exit_date`. From that date `current_employee_id()` returns null; the next page load sends the user to `/no-access`. Also delete or ban the user in Supabase → Authentication → Users (with M365 later, IT disabling the account does this).
 
 ### Sign out
 
@@ -68,12 +71,22 @@ Top-bar **Sign out** → Supabase session ended → `/login`.
 
 ### Auth
 
+Now:
+
+| Setting | Value |
+|---|---|
+| Email provider | On |
+| Allow new users to sign up | **Off** — users are created by an admin |
+| Confirm email | On (admin-created users are ticked *Auto Confirm*) |
+| Other providers | Off until Microsoft is set up |
+
+Later (Microsoft 365):
+
 | Setting | Value |
 |---|---|
 | Provider | Azure, tenant URL `https://login.microsoftonline.com/<tenant-id>` |
 | Entra app | Redirect URI `https://<project>.supabase.co/auth/v1/callback`; optional ID-token claims `email`, `xms_edov` |
-| Redirect URLs | `http://localhost:3000/auth/callback`, `https://<netlify-site>/auth/callback` |
-| Other providers | Disabled, including Email |
+| Redirect URLs | `http://localhost:3000/auth/callback`, `https://<netlify-site>/auth/callback` (plus deploy previews) |
 | Scopes | `email` |
 
 Step-by-step in the [README](../../README.md#setup).
@@ -83,7 +96,7 @@ Step-by-step in the [README](../../README.md#setup).
 No users table of our own; `auth.users` belongs to Supabase. The link is the email, resolved in one SQL function:
 
 ```sql
-current_employee_id()  -- employee id for this JWT's email, provider = azure, not exited; else null
+current_employee_id()  -- employee id for this JWT's email, not exited, provider azure or confirmed email; else null
 is_hr()                -- current employee is hr_admin or super_admin
 manages(emp uuid)      -- current employee is emp's direct manager
 ```
@@ -102,20 +115,17 @@ Write policies are added per module (Phases 3–5), each listed in that module's
 
 ### Verification
 
-`supabase/checks/rls.sql` impersonates an employee, an unknown email and HR inside a rolled-back transaction and must print `RLS check passed`. Run after every migration that touches policies.
+`supabase/checks/rls.sql` impersonates an employee, an unknown email, a leaver, HR, an unconfirmed and a confirmed email login, and another provider inside a rolled-back transaction and must print `RLS check passed`. Run after every migration that touches policies.
 
-## Open question: non-M365 users (A10)
+## Security notes for email + password
 
-The original brainstorm included email/password for people without M365. Phase 2 shipped Azure-only to keep one trusted identity source. If needed later:
-
-- Enable Supabase **Email** provider with **sign-ups disabled**; HR invites users (`auth.admin.inviteUserByEmail`, server-side, HR only).
-- Extend `current_employee_id()` to accept `provider = 'email'` **only when the email is confirmed** (`auth.jwt() ->> 'email_verified'`), otherwise anyone could register a staff address.
-- Require MFA (Supabase TOTP) for these accounts.
-
-Until then: contractors are not given access.
+- **Sign-ups must stay off.** If they were on with *Confirm email* off, anyone could register a staff address and be matched. `current_employee_id()` requires `auth.users.email_confirmed_at` for email logins as a second guard (migration `0004_email_sign_in.sql`).
+- Passwords are shared once by the admin; users can't reset their own until SMTP is configured in Supabase (default mailer is rate-limited). Acceptable for the interim; Microsoft sign-in removes the problem.
+- Consider Supabase MFA (TOTP) if the interim lasts long.
 
 ## Out of scope
 
 - Role preview / impersonation for admins.
+- Self-service password reset (needs SMTP; Microsoft sign-in will replace passwords).
 - Per-permission roles (four fixed roles only).
 - SCIM sync from Entra (HR maintains `employees`; revisit if headcount grows a lot).

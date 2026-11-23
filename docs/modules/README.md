@@ -33,11 +33,11 @@ Management who need to edit SOPs are given HR Admin. Roles live in `employees.ro
 
 ## Supabase: how every module uses it
 
-Supabase is the only backend: **Auth** for sign-in, **Postgres** for data, **row-level security (RLS)** for access control. There is no separate API server.
+Supabase is the only backend: **Auth** for sign-in (email + password now, Microsoft 365 later), **Postgres** for data, **row-level security (RLS)** for access control. There is no separate API server.
 
 ```
 Browser ──► Next.js (Netlify)                         ──► Supabase
-            proxy.ts      refresh session cookie          Auth  (Azure / Entra provider)
+            proxy.ts      refresh session cookie          Auth  (email now, Azure later)
             page.tsx      server component                Postgres + RLS
             lib/data.ts   reads, as the signed-in user     helper SQL functions
             actions.ts    writes (server actions), same     current_employee_id()

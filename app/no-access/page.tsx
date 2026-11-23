@@ -16,7 +16,7 @@ export default function NoAccessPage() {
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-xl border bg-card p-8 text-center">
         <h1 className="text-lg font-semibold">No access</h1>
         <p className="text-sm text-muted-foreground">
-          Your Microsoft account<Suspense><Who /></Suspense> isn&apos;t linked to an active
+          Your account<Suspense><Who /></Suspense> isn&apos;t linked to an active
           employee record. Ask HR to add you.
         </p>
         <form action={signOut}>

@@ -1,6 +1,6 @@
 # TAB Global HR Dashboard
 
-Internal HR dashboard for TAB Global (Phase 2: Microsoft 365 sign-in, real staff list, demo leave/events). Next.js 16 App Router + Supabase.
+Internal HR dashboard for TAB Global (Phase 2: email + password sign-in for now, Microsoft 365 later; real staff list, demo leave/events). Next.js 16 App Router + Supabase.
 Page-by-page reference: [docs/UI-PAGE-GUIDE.md](docs/UI-PAGE-GUIDE.md). Module requirements, UX flows and Supabase design: [docs/modules/](docs/modules/README.md).
 
 ## Setup
@@ -10,16 +10,20 @@ Page-by-page reference: [docs/UI-PAGE-GUIDE.md](docs/UI-PAGE-GUIDE.md). Module r
    - `supabase/migrations/0001_init.sql`
    - `supabase/migrations/0002_service_role_grants.sql`
    - `supabase/migrations/0003_auth_rls.sql` (not re-runnable: create policy/index; run once)
+   - `supabase/migrations/0004_email_sign_in.sql`
 3. Copy `.env.example` to `.env.local` and fill in `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
    `SUPABASE_SERVICE_ROLE_KEY` (seed only)
    (Supabase → Project Settings → API). Never commit `.env.local`; the service-role key bypasses RLS.
-   `npm run build` needs non-empty `SUPABASE_URL` and `SUPABASE_ANON_KEY` (dummy values are fine for a local build check).
-4. Microsoft sign-in:
-   1. Entra ID → App registrations → New: redirect URI (Web) `https://<project>.supabase.co/auth/v1/callback`. Create a client secret.
-   2. Entra → Token configuration → add optional claims `email` and `xms_edov` to the ID token (Supabase needs a verified email).
-   3. Supabase → Authentication → Providers → Azure: client ID, secret, tenant URL `https://login.microsoftonline.com/<tenant-id>`.
-   4. Supabase → Authentication → URL Configuration: add `http://localhost:3000/auth/callback` and `https://<netlify-site>/auth/callback` to Redirect URLs.
-   5. Supabase → Authentication → Providers: disable Email (and every provider except Azure). Identity is only accepted from Azure logins.
+4. Sign-in (email + password for now):
+   1. Supabase → Authentication → Sign In / Providers: **Email** on, **Allow new users to sign up** off, **Confirm email** on.
+      Leave sign-ups off: a confirmed address is the only proof a login belongs to that employee.
+   2. Supabase → Authentication → Users → **Add user → Create new user** for each person: their work email
+      (must equal `employees.email`), a password, **Auto Confirm User** ticked. Share the password with them directly.
+   3. Microsoft 365 later: Entra app registration with redirect URI `https://<project>.supabase.co/auth/v1/callback`,
+      optional ID-token claims `email` and `xms_edov`; Supabase Azure provider with tenant URL
+      `https://login.microsoftonline.com/<tenant-id>`; add `<site>/auth/callback` to Redirect URLs; restore the
+      Microsoft button (`signInWithOAuth({ provider: "azure" })`, see git history of `app/actions.ts`). Azure logins
+      are already accepted by `current_employee_id()`.
 5. Put the staff list at `data/staff.csv` (gitignored: real names, never commit; columns
    `full_name,email,title,office_id,department_id,brand_id,role,hire_date`, optional `manager_email`;
    without it each person reports to their department's first `manager`). Seed: `npm run seed`;
@@ -40,7 +44,7 @@ Page-by-page reference: [docs/UI-PAGE-GUIDE.md](docs/UI-PAGE-GUIDE.md). Module r
 
 ## Demo behaviour
 
-- **Sign-in:** Microsoft 365 only; a login is matched by email to an active `employees` row, else `/no-access`.
+- **Sign-in:** email + password (users created in Supabase, sign-ups off); a confirmed login is matched by email to an active `employees` row, else `/no-access`.
 - **Roles:** from `employees.role`; to try another role, edit your row's `role` in the Supabase table editor.
 - **Data access:** server-only via `lib/data.ts`, every query runs as the signed-in user under RLS.
 

@@ -1,15 +1,15 @@
 "use server";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/supabase";
 
-export async function signIn() {
-  const origin = (await headers()).get("origin") ?? "http://localhost:3000";
-  const { data, error } = await db().auth.signInWithOAuth({
-    provider: "azure",
-    options: { scopes: "email", redirectTo: `${origin}/auth/callback` },
+// Interim email + password sign-in. Microsoft 365 comes back later via signInWithOAuth({ provider: "azure" })
+// (see git history); /auth/callback is kept for it.
+export async function signIn(form: FormData) {
+  const { error } = await db().auth.signInWithPassword({
+    email: String(form.get("email") ?? "").trim(),
+    password: String(form.get("password") ?? ""),
   });
-  redirect(error || !data.url ? "/login?error=signin" : data.url);
+  redirect(error ? "/login?error=signin" : "/");
 }
 
 export async function signOut() {

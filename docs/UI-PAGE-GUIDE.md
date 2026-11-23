@@ -1,6 +1,6 @@
 # TAB Global HR Dashboard — UI Page Guide
 
-Reference for every page and module in the dashboard: what each screen shows, who sees it, where its data comes from, and which components build it. Reflects the **Phase 2 prototype** (Microsoft 365 sign-in): dashboard home, Employees directory and Leave & Attendance live (read-only, actions stubbed); other modules are placeholders.
+Reference for every page and module in the dashboard: what each screen shows, who sees it, where its data comes from, and which components build it. Reflects the **Phase 2 prototype** (email + password sign-in; Microsoft 365 later): dashboard home, Employees directory and Leave & Attendance live (read-only, actions stubbed); other modules are placeholders.
 
 ---
 
@@ -53,8 +53,8 @@ Every page under `app/(dashboard)/` renders inside the same shell ([layout.tsx](
 | Loading | [loading.tsx](../app/(dashboard)/loading.tsx) | Pulsing skeleton: title bar, 4 KPI tiles, one large panel |
 | Unknown route | `[section]/page.tsx` → [not-found.tsx](../app/(dashboard)/not-found.tsx) | `notFound()` → "Page not found" inside the shell with a link home. HTTP status stays 200 because the page streams (Next adds `noindex`) |
 | Auth | [proxy.ts](../proxy.ts) | Refreshes the Supabase session and redirects signed-out requests to `/login` (except `/login`, `/auth/callback`) |
-| Sign-in | [app/login/page.tsx](../app/login/page.tsx) | Centred card with a "Sign in with Microsoft" button; you land here when signed out or after Sign out. Failed callbacks return here with an error |
-| No access | [app/no-access/page.tsx](../app/no-access/page.tsx) | Shown when the Microsoft login has no active `employees` row matching its email: displays the signed-in email and a Sign out button |
+| Sign-in | [app/login/page.tsx](../app/login/page.tsx) | Centred card with email and password fields and a "Sign in" button; you land here when signed out or after Sign out. A failed sign-in returns here with "Wrong email or password" |
+| No access | [app/no-access/page.tsx](../app/no-access/page.tsx) | Shown when the signed-in account has no active `employees` row matching its email: displays the signed-in email and a Sign out button |
 | Toasts | Root layout | Sonner, top-right, light theme |
 
 ---

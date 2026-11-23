@@ -9,7 +9,7 @@ The company directory and the HR system of record for who works here, where, in 
 ## Context
 
 - 68 people (Oct 2026 directory) across 5 offices plus Remote, 7 brands, 8 departments. HR currently keeps this in spreadsheets.
-- `employees.email` must equal the person's Microsoft 365 address — it is how sign-in finds them ([01](01-authentication-and-access.md)). A typo here means the person gets "no access".
+- `employees.email` must equal the person's sign-in email (their Supabase user now, Microsoft 365 address later) — it is how sign-in finds them ([01](01-authentication-and-access.md)). A typo here means the person gets "no access".
 - `manager_id` defines who approves whose leave. Wrong manager = requests go to the wrong person.
 - Leavers are never deleted: `exit_date` keeps headcount history and attrition correct.
 
@@ -42,13 +42,13 @@ The company directory and the HR system of record for who works here, where, in 
 
 1. Top bar **Add Employee** or **Employees → New employee**.
 2. Form, one column, grouped:
-   - *Person*: full name, work email (must be the M365 address), title.
+   - *Person*: full name, work email (must match their sign-in email), title.
    - *Placement*: office, brand, department, manager (searchable select of active employees).
    - *Dates*: hire date (may be future).
 3. Validation inline: email format, email not already used (case-insensitive), manager is active, hire date present.
 4. **Save** → toast "*Name* added"; redirect to the profile. Status shows *Starting soon* if hire date is future.
 5. Behind the scenes: leave balances for the current year are created from the office's entitlement policy, pro-rated by hire date ([05](05-admin-and-settings.md#leave-policy)).
-6. On the hire date the person can sign in with Microsoft — nothing else to set up.
+6. On the hire date the person can sign in. Until Microsoft 365 sign-in is live, an admin also creates their Supabase user (work email + password, auto-confirmed).
 
 ### Change a job detail (HR Admin)
 
