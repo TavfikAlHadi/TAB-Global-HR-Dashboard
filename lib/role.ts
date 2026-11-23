@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { db } from "./supabase";
 import type { Role } from "./constants";
 
@@ -8,6 +9,7 @@ export type Me = { id: string; full_name: string; title: string; office_id: stri
 
 /** The signed-in, active employee. Matching rules live in SQL (current_employee_id). Unmatched → /no-access. */
 export const currentEmployee = cache(async (): Promise<Me> => {
+  await connection(); // identity is per request: never prerender, and don't build a client at build time
   const { data: id } = await db().rpc("current_employee_id");
   if (!id) redirect("/no-access");
   const { data, error } = await db()

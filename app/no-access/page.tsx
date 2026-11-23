@@ -1,9 +1,11 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/supabase";
 import { signOut } from "@/app/actions";
 
 async function Who() {
+  await connection(); // per-request session: don't prerender
   const { data } = await db().auth.getUser();
   return data.user?.email ? ` (${data.user.email})` : "";
 }
