@@ -8,7 +8,7 @@ The company directory and the HR system of record for who works here, where, in 
 
 ## Context
 
-- 148 people across 5 offices, 7 brands, 7 departments. HR currently keeps this in spreadsheets.
+- 68 people (Oct 2026 directory) across 5 offices plus Remote, 7 brands, 8 departments. HR currently keeps this in spreadsheets.
 - `employees.email` must equal the person's Microsoft 365 address — it is how sign-in finds them ([01](01-authentication-and-access.md)). A typo here means the person gets "no access".
 - `manager_id` defines who approves whose leave. Wrong manager = requests go to the wrong person.
 - Leavers are never deleted: `exit_date` keeps headcount history and attrition correct.

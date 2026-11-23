@@ -120,16 +120,16 @@ HR overview
 │ KPI  │ KPI  │ KPI  │ KPI  │   2 cols → xl 4
 └──────┴──────┴──────┴──────┘
 ┌──────────────────────┬────────┐
-│ Headcount by dept    │Pending │   lg: 2/3 + 1/3
-│                      │approval│
+│ SOP Library          │Coming  │   lg: 2/3 + 1/3
+│                      │up      │
 └──────────────────────┴────────┘
 ┌────────┬────────┬────────┐
-│Out this│New     │Coming  │   md 2 → xl 3
-│week    │joiners │up      │
+│Out this│New     │Pending │   md 2 → xl 3
+│week    │joiners │approval│
 └────────┴────────┴────────┘
 ┌─────────────┬─────────────┐
-│ Headcount   │ SOP Library │   lg: 1/2 + 1/2
-│ trend       │             │
+│ Headcount   │ Headcount   │   lg: 1/2 + 1/2
+│ trend       │ by dept     │
 └─────────────┴─────────────┘
 ```
 
@@ -148,11 +148,11 @@ A person on leave who also logged WFH counts once, as leave.
 
 | Panel | Component | Content |
 |---|---|---|
-| Headcount by department | `DepartmentBars` | Horizontal bars, largest first, count per department |
+| Headcount by department | `DepartmentPie` | Pie + legend listing count and % per department (empty departments omitted) |
 | Pending approvals | `ApprovalsPanel` | Pending absences from today on. First gets Approve/Decline, next 3 get Review; all toast "arrive in Phase 4". Badge = total open. Managers see only their direct reports' pending requests (RLS); HR/super admins see all |
 | Out this week | `OutThisWeekPanel` | Approved leave overlapping Mon–Fri (next week on weekends), first 5, with weekday span |
 | New joiners | `NewJoinersPanel` | Hired in last 90 days, newest 4. Badge: Onboarding (≤30 days), Joined / Starts *date* |
-| Coming up | `EventsPanel` | First 4 upcoming events |
+| Coming up | `EventsPanel` | First 6 upcoming events |
 | Headcount trend | `HeadcountChart` | Area chart, active employees at each of last 12 month-ends (current month = today) |
 | SOP Library | `SopPanel` | Searchable list, newest first, stale toggle (see §5) |
 
@@ -286,7 +286,9 @@ Colour shows good/bad; arrow shows direction. They differ when "down is good" (f
 | Component | Library | Notes |
 |---|---|---|
 | `HeadcountChart` | Recharts `AreaChart` | 256px tall, `--chart-1` stroke with fading gradient, y-axis from 0, integer ticks |
-| `DepartmentBars` | Plain CSS | Single `--primary` colour, largest first; every value printed, so bars never carry meaning alone |
+| `DepartmentPie` | Recharts `PieChart` | Fixed colour per department (never by rank), legend doubles as data table so colour is never the only cue |
+
+Department colours: Editorial `#004EA8`, Research `#0096A8`, Events `#B8902F`, Sales `#3A7BC8`, Marketing `#2E8B57`, Technology `#7A4FA0`, Finance & Admin `#C8642A`, Management `#5A6472`.
 
 ### Primitives — `components/ui/`
 

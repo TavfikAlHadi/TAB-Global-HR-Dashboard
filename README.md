@@ -1,6 +1,6 @@
 # TAB Global HR Dashboard
 
-Internal HR dashboard for TAB Global (Phase 2: Microsoft 365 sign-in, demo data). Next.js 16 App Router + Supabase.
+Internal HR dashboard for TAB Global (Phase 2: Microsoft 365 sign-in, real staff list, demo leave/events). Next.js 16 App Router + Supabase.
 Page-by-page reference: [docs/UI-PAGE-GUIDE.md](docs/UI-PAGE-GUIDE.md). Module requirements, UX flows and Supabase design: [docs/modules/](docs/modules/README.md).
 
 ## Setup
@@ -11,7 +11,7 @@ Page-by-page reference: [docs/UI-PAGE-GUIDE.md](docs/UI-PAGE-GUIDE.md). Module r
    - `supabase/migrations/0002_service_role_grants.sql`
    - `supabase/migrations/0003_auth_rls.sql` (not re-runnable: create policy/index; run once)
 3. Copy `.env.example` to `.env.local` and fill in `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
-   `SUPABASE_SERVICE_ROLE_KEY` (seed only) and `SEED_ADMIN_EMAIL` (your work email)
+   `SUPABASE_SERVICE_ROLE_KEY` (seed only)
    (Supabase → Project Settings → API). Never commit `.env.local`; the service-role key bypasses RLS.
    `npm run build` needs non-empty `SUPABASE_URL` and `SUPABASE_ANON_KEY` (dummy values are fine for a local build check).
 4. Microsoft sign-in:
@@ -20,8 +20,12 @@ Page-by-page reference: [docs/UI-PAGE-GUIDE.md](docs/UI-PAGE-GUIDE.md). Module r
    3. Supabase → Authentication → Providers → Azure: client ID, secret, tenant URL `https://login.microsoftonline.com/<tenant-id>`.
    4. Supabase → Authentication → URL Configuration: add `http://localhost:3000/auth/callback` and `https://<netlify-site>/auth/callback` to Redirect URLs.
    5. Supabase → Authentication → Providers: disable Email (and every provider except Azure). Identity is only accepted from Azure logins.
-5. Seed demo data: `npm run seed`. It wipes and re-inserts everything, with dates relative to today,
-   so rerun it to refresh the demo. Then run `supabase/checks/rls.sql` in the SQL editor; expect `RLS check passed`.
+5. Put the staff list at `data/staff.csv` (gitignored: real names, never commit; columns
+   `full_name,email,title,office_id,department_id,brand_id,role,hire_date`, optional `manager_email`;
+   without it each person reports to their department's first `manager`). Seed: `npm run seed`;
+   it validates the whole sheet first and stops, listing every bad line, before touching the database.
+   It wipes and re-inserts everything; leave, WFH, events and announcements are still demo data
+   with dates relative to today, so rerun it to refresh. Then run `supabase/checks/rls.sql` in the SQL editor; expect `RLS check passed`.
 6. Run: `npm run dev` → http://localhost:3000
 
 ## Scripts

@@ -5,6 +5,7 @@ export const OFFICES = [
   { id: "DXB", name: "Dubai" },
   { id: "KL", name: "Kuala Lumpur" },
   { id: "MNL", name: "Manila" },
+  { id: "REMOTE", name: "Remote" },
 ] as const;
 
 export const BRANDS = [
@@ -25,6 +26,7 @@ export const DEPARTMENTS = [
   { id: "marketing", name: "Marketing" },
   { id: "technology", name: "Technology" },
   { id: "finance-admin", name: "Finance & Admin" },
+  { id: "management", name: "Management" },
 ] as const;
 
 export const ROLES = [

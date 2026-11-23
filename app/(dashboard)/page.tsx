@@ -10,7 +10,7 @@ import { Panel } from "@/components/panel";
 import { PageTitle } from "@/components/page-title";
 import { KpiCard, deltaTrend } from "@/components/kpi-card";
 import { HeadcountChart } from "@/components/charts/headcount-chart";
-import { DepartmentBars } from "@/components/charts/department-bars";
+import { DepartmentPie } from "@/components/charts/department-pie";
 import { Badge } from "@/components/ui/badge";
 import { ApprovalsPanel } from "@/components/panels/approvals-panel";
 import { OutThisWeekPanel } from "@/components/panels/out-this-week-panel";
@@ -47,24 +47,24 @@ async function HrView({ filter }: { filter: Filter }) {
         <KpiCard label="Attrition (12 months)" value={`${k.attrition}%`} trend={{ text: `${k.leavers} leaver${k.leavers === 1 ? "" : "s"} in 12 months`, tone: "flat" }} />
       </section>
       <section className="grid gap-4 lg:grid-cols-3">
-        <Panel title="Headcount by department" className="lg:col-span-2">
-          <DepartmentBars data={depts} />
+        <Panel title="SOP Library" description="Sorted by last updated" className="lg:col-span-2">
+          <SopPanel sops={sops} />
         </Panel>
-        <Panel title="Pending approvals" action={<Badge className="bg-amber-100 text-amber-800">{pending.length} open</Badge>}>
-          <ApprovalsPanel requests={pending} />
-        </Panel>
+        <Panel title="Coming up"><EventsPanel events={events} limit={6} /></Panel>
       </section>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <Panel title="Out this week"><OutThisWeekPanel absences={week} days={days} /></Panel>
         <Panel title="New joiners"><NewJoinersPanel joiners={joiners} today={today} /></Panel>
-        <Panel title="Coming up" className="md:col-span-2 xl:col-span-1"><EventsPanel events={events} limit={4} /></Panel>
+        <Panel title="Pending approvals" className="md:col-span-2 xl:col-span-1" action={<Badge className="bg-amber-100 text-amber-800">{pending.length} open</Badge>}>
+          <ApprovalsPanel requests={pending} />
+        </Panel>
       </section>
       <section className="grid gap-4 lg:grid-cols-2">
         <Panel title="Headcount trend" description="Active employees at each month-end, last 12 months">
           <HeadcountChart data={trend} />
         </Panel>
-        <Panel title="SOP Library" description="Sorted by last updated">
-          <SopPanel sops={sops} />
+        <Panel title="Headcount by department">
+          <DepartmentPie data={depts} />
         </Panel>
       </section>
     </div>
