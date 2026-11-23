@@ -1,9 +1,18 @@
 "use server";
-import { cookies } from "next/headers";
-import { ROLES } from "@/lib/constants";
-import { ROLE_COOKIE } from "@/lib/role";
+import { redirect } from "next/navigation";
+import { db } from "@/lib/supabase";
 
-export async function setRole(role: string) {
-  if (!ROLES.some((r) => r.id === role)) return;
-  (await cookies()).set(ROLE_COOKIE, role, { path: "/", sameSite: "lax", httpOnly: true });
+// Interim email + password sign-in. Microsoft 365 comes back later via signInWithOAuth({ provider: "azure" })
+// (see git history); /auth/callback is kept for it.
+export async function signIn(form: FormData) {
+  const { error } = await db().auth.signInWithPassword({
+    email: String(form.get("email") ?? "").trim(),
+    password: String(form.get("password") ?? ""),
+  });
+  redirect(error ? "/login?error=signin" : "/");
+}
+
+export async function signOut() {
+  await db().auth.signOut();
+  redirect("/login");
 }

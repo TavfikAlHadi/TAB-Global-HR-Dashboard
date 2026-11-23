@@ -1,6 +1,6 @@
 # TAB Global HR Dashboard — UI Page Guide
 
-Reference for every page and module in the dashboard: what each screen shows, who sees it, where its data comes from, and which components build it. Reflects the **Phase 1 prototype** (dashboard home live, other modules stubbed).
+Reference for every page and module in the dashboard: what each screen shows, who sees it, where its data comes from, and which components build it. Reflects the **Phase 2 prototype** (email + password sign-in; Microsoft 365 later): dashboard home, Employees directory and Leave & Attendance live (read-only, actions stubbed); other modules are placeholders.
 
 ---
 
@@ -10,7 +10,7 @@ Every page under `app/(dashboard)/` renders inside the same shell ([layout.tsx](
 
 ```
 ┌──────────────┬──────────────────────────────────────────────────────────┐
-│  TAB logo    │  [Office ▾] [Brand ▾]        [Quick actions…] View as [▾]│  ← top bar
+│  TAB logo    │  [Office ▾] [Brand ▾]        [Quick actions…] [Sign out] │  ← top bar
 │──────────────│──────────────────────────────────────────────────────────│
 │ Dashboard    │                                                          │
 │ Employees    │                                                          │
@@ -21,7 +21,7 @@ Every page under `app/(dashboard)/` renders inside the same shell ([layout.tsx](
 │ Announcements│                                                          │
 │ Settings     │                                                          │
 │              │                                                          │
-│ Phase 1 · demo data                                                     │
+│ Phase 2 · demo data                                                     │
 └──────────────┴──────────────────────────────────────────────────────────┘
 ```
 
@@ -34,7 +34,7 @@ Every page under `app/(dashboard)/` renders inside the same shell ([layout.tsx](
 | Items | Driven by `NAV` in [lib/nav.ts](../lib/nav.ts) — add a module there and it appears here |
 | Active state | `bg-sidebar-accent` + `font-medium`, `aria-current="page"`. Dashboard matches `/` exactly; others match by prefix |
 | Filter carry-over | Links keep the current query string, so office/brand filters persist across modules |
-| Footer | Settings link, then "Phase 1 prototype · demo data" |
+| Footer | Settings link, then "Phase 2 · demo data" |
 
 ### 1.2 Top bar — [topbar-controls.tsx](../components/topbar-controls.tsx)
 
@@ -44,22 +44,24 @@ Every page under `app/(dashboard)/` renders inside the same shell ([layout.tsx](
 | **Brand filter** | Select: All brands + 7 TAB brands. Writes `?brand=tab` etc. | Everyone |
 | **Quick actions** | Add Employee, Post Job, Approve Leave, New SOP. Each currently shows a toast: "*X* arrives in Phase *N*." | Manager, HR Admin, Super Admin |
 | ↳ New SOP | Shown only when the role can edit SOPs | HR Admin, Super Admin |
-| **View as** | Demo role switcher. Sets `demo_role` cookie via `setRole` server action, then refreshes | Everyone (Phase 1 only) |
+| **Sign out** | `signOut` server action; ends the Supabase session → `/login` | Everyone |
 
 ### 1.3 Global states
 
 | State | Where | What renders |
 |---|---|---|
 | Loading | [loading.tsx](../app/(dashboard)/loading.tsx) | Pulsing skeleton: title bar, 4 KPI tiles, one large panel |
-| Unknown route | `[section]/page.tsx` | `notFound()` → Next.js 404 |
-| Auth (preview) | [proxy.ts](../proxy.ts) | HTTP Basic prompt when `DEMO_PASSWORD` is set; any username, password checked |
+| Unknown route | `[section]/page.tsx` → [not-found.tsx](../app/(dashboard)/not-found.tsx) | `notFound()` → "Page not found" inside the shell with a link home. HTTP status stays 200 because the page streams (Next adds `noindex`) |
+| Auth | [proxy.ts](../proxy.ts) | Refreshes the Supabase session and redirects signed-out requests to `/login` (except `/login`, `/auth/callback`) |
+| Sign-in | [app/login/page.tsx](../app/login/page.tsx) | Centred card with email and password fields and a "Sign in" button; you land here when signed out or after Sign out. A failed sign-in returns here with "Wrong email or password" |
+| No access | [app/no-access/page.tsx](../app/no-access/page.tsx) | Shown when the signed-in account has no active `employees` row matching its email: displays the signed-in email and a Sign out button |
 | Toasts | Root layout | Sonner, top-right, light theme |
 
 ---
 
 ## 2. Roles and visibility
 
-Role comes from the `demo_role` cookie in Phase 1 (default **HR Admin**); Phase 2 moves it to the signed-in user's `employees.role`. Rules live in [lib/role.ts](../lib/role.ts).
+Role comes from the signed-in user's `employees.role` (via `current_employee_id()`); RLS enforces data access. Rules live in [lib/role.ts](../lib/role.ts).
 
 | Role | Dashboard view | Quick actions | New SOP |
 |---|---|---|---|
@@ -95,8 +97,8 @@ The page subtitle shows the active scope, e.g. "Singapore · TABInsights" or "Al
 | # | Module | Route | Icon | Phase | Status |
 |---|---|---|---|---|---|
 | 4.1 | Dashboard | `/` | LayoutDashboard | 1 | **Live** |
-| 4.2 | Employees | `/employees` | Users | 4 | **Live** (read-only) |
-| 4.3 | Leave & Attendance | `/whos-out` | CalendarOff | 4 | **Live** (approvals stubbed) |
+| 4.2 | Employees | `/employees` | Users | 4 (editing) | **Live** (read-only) |
+| 4.3 | Leave & Attendance | `/whos-out` | CalendarOff | 4 (approvals) | **Live** (approvals stubbed) |
 | 4.4 | Recruitment | `/recruitment` | Briefcase | 6 | Placeholder (not scoped) |
 | 4.5 | SOP Library | `/sops` | BookOpen | 5 | Placeholder |
 | 4.6 | Events & Forums | `/events` | CalendarDays | 5 | Placeholder |
@@ -118,16 +120,16 @@ HR overview
 │ KPI  │ KPI  │ KPI  │ KPI  │   2 cols → xl 4
 └──────┴──────┴──────┴──────┘
 ┌──────────────────────┬────────┐
-│ Headcount by dept    │Pending │   lg: 2/3 + 1/3
-│                      │approval│
+│ SOP Library          │Coming  │   lg: 2/3 + 1/3
+│                      │up      │
 └──────────────────────┴────────┘
 ┌────────┬────────┬────────┐
-│Out this│New     │Coming  │   md 2 → xl 3
-│week    │joiners │up      │
+│Out this│New     │Pending │   md 2 → xl 3
+│week    │joiners │approval│
 └────────┴────────┴────────┘
 ┌─────────────┬─────────────┐
-│ Headcount   │ SOP Library │   lg: 1/2 + 1/2
-│ trend       │             │
+│ Headcount   │ Headcount   │   lg: 1/2 + 1/2
+│ trend       │ by dept     │
 └─────────────┴─────────────┘
 ```
 
@@ -146,17 +148,17 @@ A person on leave who also logged WFH counts once, as leave.
 
 | Panel | Component | Content |
 |---|---|---|
-| Headcount by department | `DepartmentBars` | Horizontal bars, largest first, count per department |
-| Pending approvals | `ApprovalsPanel` | Pending absences from today on. First gets Approve/Decline, next 3 get Review; all toast "arrive in Phase 4". Badge = total open |
+| Headcount by department | `DepartmentPie` | Pie + legend listing count and % per department (empty departments omitted) |
+| Pending approvals | `ApprovalsPanel` | Pending absences from today on. First gets Approve/Decline, next 3 get Review; all toast "arrive in Phase 4". Badge = total open. Managers see only their direct reports' pending requests (RLS); HR/super admins see all |
 | Out this week | `OutThisWeekPanel` | Approved leave overlapping Mon–Fri (next week on weekends), first 5, with weekday span |
 | New joiners | `NewJoinersPanel` | Hired in last 90 days, newest 4. Badge: Onboarding (≤30 days), Joined / Starts *date* |
-| Coming up | `EventsPanel` | First 4 upcoming events |
+| Coming up | `EventsPanel` | First 6 upcoming events |
 | Headcount trend | `HeadcountChart` | Area chart, active employees at each of last 12 month-ends (current month = today) |
 | SOP Library | `SopPanel` | Searchable list, newest first, stale toggle (see §5) |
 
 #### Staff view (Employee)
 
-Pretends to be the seeded demo employee (`DEMO_EMPLOYEE_EMAIL`) until real login.
+Shown to the signed-in employee; leave balance and greeting are theirs.
 
 ```
 Good day, <first name>
@@ -219,7 +221,7 @@ Week of 23–27 November 2026
 |---|---|---|
 | Today tiles | `KpiCard` (no trend) | In office = active headcount − leave − WFH. Pending tile manager/HR only |
 | Team calendar | `TeamCalendar` | Approved + (manager/HR) pending absences. Annual = brand blue, sick = red, other = amber, WFH = indigo, pending = dashed. Leave beats WFH on overlap |
-| Leave requests | `LeaveRequestsPanel` | Every pending request from today on, with dates, day count and days left after (from `leave_balances`). Approve / Decline toast "arrive in Phase 4" — the schema has no declined status yet |
+| Leave requests | `LeaveRequestsPanel` | Every pending request from today on, with dates, day count and days left after (from `leave_balances`). Managers see only their direct reports' pending requests (RLS); HR/super admins see all. Approve / Decline toast "arrive in Phase 4" — the schema has no declined status yet |
 
 ### 4.4 Recruitment — `/recruitment` (Phase 6)
 
@@ -273,13 +275,20 @@ Colour shows good/bad; arrow shows direction. They differ when "down is good" (f
 | `WhosOutPanel` | 5-day strip, today outlined in primary. List: plane icon (red) = leave, home icon (teal) = WFH | "Everyone is in today." |
 | `LeaveBalancePanel` | Days left of entitled, progress bar (`role="img"` with label), pending list | "None." for pending |
 | `AnnouncementsPanel` | Primary left border, title, body, date · office | — |
+| `ApprovalsPanel` | Pending requests; first gets Approve/Decline, next 3 Review (all toast) | — |
+| `OutThisWeekPanel` | Approved leave this week, first 5, with weekday span | — |
+| `NewJoinersPanel` | Newest 4 hires (90 days), Onboarding / Joined / Starts badge | — |
+| `LeaveRequestsPanel` | Pending requests with day count and days left after; Approve/Decline toast | — |
+| `TeamCalendar` | Mon–Fri grid, one row per person away, bars span consecutive days, pending dashed | — |
 
 ### Charts
 
 | Component | Library | Notes |
 |---|---|---|
 | `HeadcountChart` | Recharts `AreaChart` | 256px tall, `--chart-1` stroke with fading gradient, y-axis from 0, integer ticks |
-| `DepartmentBars` | Plain CSS | Single `--primary` colour, largest first; every value printed, so bars never carry meaning alone |
+| `DepartmentPie` | Recharts `PieChart` | Fixed colour per department (never by rank), legend doubles as data table so colour is never the only cue |
+
+Department colours: Editorial `#004EA8`, Research `#0096A8`, Events `#B8902F`, Sales `#3A7BC8`, Marketing `#2E8B57`, Technology `#7A4FA0`, Finance & Admin `#C8642A`, Management `#5A6472`.
 
 ### Primitives — `components/ui/`
 
@@ -289,7 +298,7 @@ shadcn components on Base UI: `Badge`, `Button`, `Card`, `Input`, `Sonner`. Icon
 
 ## 6. Design tokens
 
-Defined in [app/globals.css](../app/globals.css). Font: **Public Sans** (`--font-sans`). Light theme only in Phase 1.
+Defined in [app/globals.css](../app/globals.css). Font: **Public Sans** (`--font-sans`). Light theme only.
 
 | Token | Value | Use |
 |---|---|---|
@@ -314,12 +323,12 @@ Brand assets (logos, brand guide PDF) are in [Assets/](../Assets/).
 
 | Breakpoint | Change |
 |---|---|
-| < 768px (`md`) | Sidebar hidden; top bar wraps; page padding 16px |
-| ≥ 768px | Sidebar shown; padding 24px; KPI grid 3 columns |
+| < 768px (`md`) | Sidebar hidden, bottom tab bar instead; top bar wraps; page padding 16px; KPI grid 2 columns |
+| ≥ 768px | Sidebar shown; padding 32px |
 | ≥ 1024px (`lg`) | Panel rows split 2/3 + 1/3 |
-| ≥ 1280px (`xl`) | KPI grid 6 columns |
+| ≥ 1280px (`xl`) | KPI grid 4 columns |
 
-No mobile nav yet — below `md` modules are reachable only by URL.
+The bottom tab bar holds Home, People, Leave and SOPs only; the other modules are desktop-only until a "More" sheet exists.
 
 ---
 

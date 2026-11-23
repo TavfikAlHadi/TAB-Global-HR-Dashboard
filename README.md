@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TAB Global HR Dashboard
 
-## Getting Started
+Internal HR dashboard for TAB Global (Phase 2: email + password sign-in for now, Microsoft 365 later; real staff list, demo leave/events). Next.js 16 App Router + Supabase.
+Page-by-page reference: [docs/UI-PAGE-GUIDE.md](docs/UI-PAGE-GUIDE.md). Module requirements, UX flows and Supabase design: [docs/modules/](docs/modules/README.md).
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Install: `npm install`
+2. Create a Supabase project, then run the migrations in order in the SQL editor (or `supabase db push`):
+   - `supabase/migrations/0001_init.sql`
+   - `supabase/migrations/0002_service_role_grants.sql`
+   - `supabase/migrations/0003_auth_rls.sql` (not re-runnable: create policy/index; run once)
+   - `supabase/migrations/0004_email_sign_in.sql`
+3. Copy `.env.example` to `.env.local` and fill in `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY` (seed only)
+   (Supabase → Project Settings → API). Never commit `.env.local`; the service-role key bypasses RLS.
+4. Sign-in (email + password for now):
+   1. Supabase → Authentication → Sign In / Providers: **Email** on, **Allow new users to sign up** off, **Confirm email** on.
+      Leave sign-ups off: a confirmed address is the only proof a login belongs to that employee.
+   2. Supabase → Authentication → Users → **Add user → Create new user** for each person: their work email
+      (must equal `employees.email`), a password, **Auto Confirm User** ticked. Share the password with them directly.
+   3. Microsoft 365 later: Entra app registration with redirect URI `https://<project>.supabase.co/auth/v1/callback`,
+      optional ID-token claims `email` and `xms_edov`; Supabase Azure provider with tenant URL
+      `https://login.microsoftonline.com/<tenant-id>`; add `<site>/auth/callback` to Redirect URLs; restore the
+      Microsoft button (`signInWithOAuth({ provider: "azure" })`, see git history of `app/actions.ts`). Azure logins
+      are already accepted by `current_employee_id()`.
+5. Put the staff list at `data/staff.csv` (gitignored: real names, never commit; columns
+   `full_name,email,title,office_id,department_id,brand_id,role,hire_date`, optional `manager_email`;
+   without it each person reports to their department's first `manager`). Seed: `npm run seed`;
+   it validates the whole sheet first and stops, listing every bad line, before touching the database.
+   It wipes and re-inserts everything; leave, WFH, events and announcements are still demo data
+   with dates relative to today, so rerun it to refresh. Then run `supabase/checks/rls.sql` in the SQL editor; expect `RLS check passed`.
+6. Run: `npm run dev` → http://localhost:3000
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Command | Does |
+|---|---|
+| `npm run dev` | Dev server |
+| `npm run build` / `npm start` | Production build / serve |
+| `npm run lint` | ESLint |
+| `npm test` | Unit tests (`lib/*.test.ts`, Node test runner via tsx) |
+| `npm run seed` | Reset Supabase to the demo dataset |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Demo behaviour
 
-## Learn More
+- **Sign-in:** email + password (users created in Supabase, sign-ups off); a confirmed login is matched by email to an active `employees` row, else `/no-access`.
+- **Roles:** from `employees.role`; to try another role, edit your row's `role` in the Supabase table editor.
+- **Data access:** server-only via `lib/data.ts`, every query runs as the signed-in user under RLS.
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Netlify (`netlify.toml`). Set `SUPABASE_URL` and `SUPABASE_ANON_KEY` in the site's environment variables. Remove `DEMO_PASSWORD` and `SUPABASE_SERVICE_ROLE_KEY` from Netlify.

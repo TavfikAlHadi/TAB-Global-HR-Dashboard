@@ -5,6 +5,7 @@ export const OFFICES = [
   { id: "DXB", name: "Dubai" },
   { id: "KL", name: "Kuala Lumpur" },
   { id: "MNL", name: "Manila" },
+  { id: "REMOTE", name: "Remote" },
 ] as const;
 
 export const BRANDS = [
@@ -25,6 +26,7 @@ export const DEPARTMENTS = [
   { id: "marketing", name: "Marketing" },
   { id: "technology", name: "Technology" },
   { id: "finance-admin", name: "Finance & Admin" },
+  { id: "management", name: "Management" },
 ] as const;
 
 export const ROLES = [
@@ -41,9 +43,6 @@ export const STALE_DAYS = 90;
 // Directory status, derived in getDirectory (lib/data.ts).
 export const STATUSES = ["Active", "On leave", "Probation", "Starting soon", "Notice period"] as const;
 export type Status = (typeof STATUSES)[number];
-
-// Seeded employee the Employee view pretends to be until real login (Phase 2).
-export const DEMO_EMPLOYEE_EMAIL = "mei.ling.tan@tabglobal.example";
 
 const byId = <T extends { id: string; name: string }>(list: readonly T[]) =>
   Object.fromEntries(list.map((x) => [x.id, x.name])) as Record<string, string>;

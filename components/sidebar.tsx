@@ -52,7 +52,7 @@ export function Sidebar() {
         </nav>
         <div className="mt-auto flex flex-col gap-0.5">
           <SideLink n={settings} />
-          <p className="mt-2 border-t px-3 pt-3 text-xs text-muted-foreground">Phase 1 prototype · demo data</p>
+          <p className="mt-2 border-t px-3 pt-3 text-xs text-muted-foreground">Phase 2 · demo data</p>
         </div>
       </aside>
       <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-4 border-t bg-card px-2 pt-1.5 pb-5 md:hidden">

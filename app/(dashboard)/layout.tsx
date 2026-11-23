@@ -1,6 +1,9 @@
 import { Suspense } from "react";
 import { Sidebar } from "@/components/sidebar";
-import { Filters, QuickActions, RoleSwitcher } from "@/components/topbar-controls";
+import { Filters, QuickActions } from "@/components/topbar-controls";
+import { LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { signOut } from "@/app/actions";
 import { currentRole, canViewAll, canEditSops } from "@/lib/role";
 
 async function RoleControls() {
@@ -8,7 +11,9 @@ async function RoleControls() {
   return (
     <div className="flex flex-wrap items-center gap-3">
       {canViewAll(role) && <QuickActions canEditSops={canEditSops(role)} />}
-      <RoleSwitcher role={role} />
+      <form action={signOut}>
+        <Button type="submit" variant="ghost" size="lg" className="px-3.5"><LogOut aria-hidden /> Sign out</Button>
+      </form>
     </div>
   );
 }
