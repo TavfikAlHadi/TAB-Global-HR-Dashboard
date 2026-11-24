@@ -1,15 +1,14 @@
 import { connection } from "next/server";
-import { currentRole, currentEmployee, canViewAll } from "@/lib/role";
+import { currentRole, currentEmployee, canViewAll, canEditSops } from "@/lib/role";
 import {
-  parseFilter, todayISO, getKpis, getHeadcountTrend, getDepartmentSplit, getSops, getEvents,
-  getAbsences, getAnnouncements, getLeaveBalance, getNewJoiners, type Filter,
+  parseFilter, todayISO, getKpis, getDepartmentSplit, getSops, getEvents,
+  getAbsences, getAnnouncements, getLeaveBalance, getNewJoiners, getSocialPosts, type Filter,
 } from "@/lib/data";
 import { BRAND_NAME, DEPARTMENT_NAME, OFFICE_NAME } from "@/lib/constants";
 import { fmtDate, workWeek } from "@/lib/utils";
 import { Panel } from "@/components/panel";
 import { PageTitle } from "@/components/page-title";
 import { KpiCard, deltaTrend } from "@/components/kpi-card";
-import { HeadcountChart } from "@/components/charts/headcount-chart";
 import { DepartmentPie } from "@/components/charts/department-pie";
 import { Badge } from "@/components/ui/badge";
 import { ApprovalsPanel } from "@/components/panels/approvals-panel";
@@ -20,6 +19,7 @@ import { EventsPanel } from "@/components/panels/events-panel";
 import { WhosOutPanel } from "@/components/panels/whos-out-panel";
 import { LeaveBalancePanel } from "@/components/panels/leave-balance-panel";
 import { AnnouncementsPanel } from "@/components/panels/announcements-panel";
+import { SocialPanel } from "@/components/panels/social-panel";
 
 const scopeLabel = (f: Filter) => [f.office && OFFICE_NAME[f.office], f.brand && BRAND_NAME[f.brand]].filter(Boolean).join(" · ") || "All offices and brands";
 
@@ -27,14 +27,14 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
   await connection(); // dates are "today": render per request, never prerender
   const filter = parseFilter(await searchParams);
   const role = await currentRole();
-  return canViewAll(role) ? <HrView filter={filter} /> : <StaffView filter={filter} />;
+  return canViewAll(role) ? <HrView filter={filter} canPost={canEditSops(role)} /> : <StaffView filter={filter} />;
 }
 
-async function HrView({ filter }: { filter: Filter }) {
+async function HrView({ filter, canPost }: { filter: Filter; canPost: boolean }) {
   const today = todayISO();
   const days = workWeek(today);
-  const [k, trend, depts, sops, events, pending, week, joiners] = await Promise.all([
-    getKpis(filter), getHeadcountTrend(filter), getDepartmentSplit(filter), getSops(filter), getEvents(filter),
+  const [k, social, depts, sops, events, pending, week, joiners] = await Promise.all([
+    getKpis(filter), getSocialPosts(), getDepartmentSplit(filter), getSops(filter), getEvents(filter),
     getAbsences(filter, today, "9999-12-31", "pending"), getAbsences(filter, days[0], days[4]), getNewJoiners(filter),
   ]);
   return (
@@ -60,8 +60,8 @@ async function HrView({ filter }: { filter: Filter }) {
         </Panel>
       </section>
       <section className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Headcount trend" description="Active employees at each month-end, last 12 months">
-          <HeadcountChart data={trend} />
+        <Panel title="Recent social media posts" description="Open a post to like it, or share it to your own profile">
+          <SocialPanel posts={social} canPost={canPost} />
         </Panel>
         <Panel title="Headcount by department">
           <DepartmentPie data={depts} />
@@ -77,8 +77,8 @@ async function StaffView({ filter }: { filter: Filter }) {
   const from = today < days[0] ? today : days[0];
   const to = today > days[4] ? today : days[4];
   const me = await currentEmployee();
-  const [leave, absences, sops, events, news] = await Promise.all([
-    getLeaveBalance(me.id), getAbsences(filter, from, to), getSops(filter), getEvents(filter), getAnnouncements(filter),
+  const [leave, absences, sops, events, news, social] = await Promise.all([
+    getLeaveBalance(me.id), getAbsences(filter, from, to), getSops(filter), getEvents(filter), getAnnouncements(filter), getSocialPosts(4),
   ]);
   const mySops = sops.filter((s) => s.department_id === me.department_id || s.brand_id === null);
   return (
@@ -97,6 +97,7 @@ async function StaffView({ filter }: { filter: Filter }) {
           <SopPanel sops={mySops} />
         </Panel>
         <div className="flex flex-col gap-4">
+          <Panel title="Recent social media posts" description="Open a post to like it, or share it"><SocialPanel posts={social} canPost={false} /></Panel>
           <Panel title="Announcements"><AnnouncementsPanel items={news} /></Panel>
           <Panel title="Upcoming events"><EventsPanel events={events} limit={5} /></Panel>
         </div>

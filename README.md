@@ -11,6 +11,7 @@ Page-by-page reference: [docs/UI-PAGE-GUIDE.md](docs/UI-PAGE-GUIDE.md). Module r
    - `supabase/migrations/0002_service_role_grants.sql`
    - `supabase/migrations/0003_auth_rls.sql` (not re-runnable: create policy/index; run once)
    - `supabase/migrations/0004_email_sign_in.sql`
+   - `supabase/migrations/0005_social_posts.sql` (run once; the overview needs this table)
 3. Copy `.env.example` to `.env.local` and fill in `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
    `SUPABASE_SERVICE_ROLE_KEY` (seed only)
    (Supabase → Project Settings → API). Never commit `.env.local`; the service-role key bypasses RLS.

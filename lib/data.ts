@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { db } from "./supabase";
 import { isStale } from "./sop";
-import { BRANDS, DEPARTMENTS, OFFICES } from "./constants";
+import { BRANDS, DEPARTMENTS, OFFICES, type SocialPlatform } from "./constants";
 import { activeOn, attrition, directoryStatus, outCounts, shift } from "./metrics";
 
 // The only module the UI imports for data. db() runs every query as the signed-in user (RLS).
@@ -23,7 +23,6 @@ type Employee = {
 
 /** Company "today" in Singapore time (head office), as YYYY-MM-DD. */
 export const todayISO = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Singapore" });
-const monthEnd = (y: number, m: number) => new Date(Date.UTC(y, m + 1, 0)).toISOString().slice(0, 10);
 
 function check<T>(r: { data: T | null; error: unknown }, what: string): T {
   if (r.error) throw new Error(`${what}: ${JSON.stringify(r.error)}`);
@@ -91,19 +90,6 @@ export async function getNewJoiners(f: Filter, limit = 4) {
     .slice(0, limit);
 }
 
-/** Headcount at each of the last 12 month-ends (current month = today). */
-export async function getHeadcountTrend(f: Filter) {
-  const today = todayISO();
-  const people = await employees(f);
-  const d = new Date(today);
-  return Array.from({ length: 12 }, (_, i) => {
-    const y = d.getUTCFullYear(), m = d.getUTCMonth() - 11 + i;
-    const day = i === 11 ? today : monthEnd(y, m);
-    const label = new Date(Date.UTC(y, m, 1)).toLocaleDateString("en-GB", { month: "short", year: "2-digit", timeZone: "UTC" });
-    return { month: label, headcount: people.filter((e) => activeOn(e, day)).length };
-  });
-}
-
 export async function getDepartmentSplit(f: Filter) {
   const today = todayISO();
   const active = (await employees(f)).filter((e) => activeOn(e, today));
@@ -134,6 +120,16 @@ export async function getAnnouncements(f: Filter) {
   if (f.office) q = q.or(`office_id.eq.${f.office},office_id.is.null`);
   return check(await q, "announcements") as { id: string; title: string; body: string; office_id: string | null; published_at: string }[];
 }
+
+/** Newest first. Links are pasted in by HR; likes and shares happen on the platform. */
+export async function getSocialPosts(limit = 6) {
+  const rows = check(
+    await db().from("social_posts").select("id, platform, url, caption, posted_at").order("posted_at", { ascending: false }).order("created_at", { ascending: false }).limit(limit),
+    "social_posts",
+  );
+  return rows as { id: string; platform: SocialPlatform; url: string; caption: string; posted_at: string }[];
+}
+export type SocialPost = Awaited<ReturnType<typeof getSocialPosts>>[number];
 
 export async function getLeaveBalance(employeeId: string) {
   const year = Number(todayISO().slice(0, 4));
