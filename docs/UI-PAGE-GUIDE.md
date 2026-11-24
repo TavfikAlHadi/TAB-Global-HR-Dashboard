@@ -128,8 +128,8 @@ HR overview
 │week    │joiners │approval│
 └────────┴────────┴────────┘
 ┌─────────────┬─────────────┐
-│ Headcount   │ Headcount   │   lg: 1/2 + 1/2
-│ trend       │ by dept     │
+│ Social      │ Headcount   │   lg: 1/2 + 1/2
+│ posts       │ by dept     │
 └─────────────┴─────────────┘
 ```
 
@@ -153,7 +153,7 @@ A person on leave who also logged WFH counts once, as leave.
 | Out this week | `OutThisWeekPanel` | Approved leave overlapping Mon–Fri (next week on weekends), first 5, with weekday span |
 | New joiners | `NewJoinersPanel` | Hired in last 90 days, newest 4. Badge: Onboarding (≤30 days), Joined / Starts *date* |
 | Coming up | `EventsPanel` | First 6 upcoming events |
-| Headcount trend | `HeadcountChart` | Area chart, active employees at each of last 12 month-ends (current month = today) |
+| Recent social media posts | `SocialPanel` | Latest 6 posts HR pasted in (LinkedIn, Facebook, Instagram, TikTok). **Open to like** opens the post; **Share on LinkedIn/Facebook** opens that platform's share screen; Instagram/TikTok have none, so **Copy link to share**. HR admins and super admins get an **Add a post** form (link checked against the platform's domain; share-tracking parameters such as LinkedIn `rcm` and Instagram `igsh` are stripped before saving) and a remove button. Staff view shows the latest 4, read-only |
 | SOP Library | `SopPanel` | Searchable list, newest first, stale toggle (see §5) |
 
 #### Staff view (Employee)
@@ -285,7 +285,6 @@ Colour shows good/bad; arrow shows direction. They differ when "down is good" (f
 
 | Component | Library | Notes |
 |---|---|---|
-| `HeadcountChart` | Recharts `AreaChart` | 256px tall, `--chart-1` stroke with fading gradient, y-axis from 0, integer ticks |
 | `DepartmentPie` | Recharts `PieChart` | Fixed colour per department (never by rank), legend doubles as data table so colour is never the only cue |
 
 Department colours: Editorial `#004EA8`, Research `#0096A8`, Events `#B8902F`, Sales `#3A7BC8`, Marketing `#2E8B57`, Technology `#7A4FA0`, Finance & Admin `#C8642A`, Management `#5A6472`.

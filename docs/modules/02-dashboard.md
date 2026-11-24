@@ -19,7 +19,7 @@ The landing page after sign-in. One screen that answers "what do I need to know 
 | D1 | Role picks the view: Employee → Staff view, Manager/HR Admin/Super Admin → HR overview | Done |
 | D2 | Office + brand filter in URL, applied to every panel | Done |
 | D3 | KPI cards with trend vs a prior point (total, open positions, out today, attrition) | Done |
-| D4 | Headcount trend: 12 month-ends, filterable | Done |
+| D4 | Recent social media posts (LinkedIn, Facebook, Instagram, TikTok): staff open a post to like it or share it; HR pastes links in. Replaced the headcount trend | Done |
 | D5 | Headcount by department | Done |
 | D6 | Pending approvals (Manager: direct reports only, via RLS) | Done (actions stubbed until Phase 4) |
 | D7 | Out this week, new joiners, upcoming events, SOP panel with stale flag | Done |
@@ -62,7 +62,8 @@ No tables of its own. Reads only, all through `lib/data.ts` as the signed-in use
 | Panel | Function | Tables |
 |---|---|---|
 | KPIs | `getKpis` | employees, absences, job_openings |
-| Headcount trend / by department | `getHeadcountTrend`, `getDepartmentSplit` | employees |
+| Headcount by department | `getDepartmentSplit` | employees |
+| Recent social media posts | `getSocialPosts`; `addSocialPost` / `removeSocialPost` actions (HR only, RLS-enforced) | social_posts |
 | Pending approvals, out this week, who's out | `getAbsences` | absences, employees |
 | New joiners | `getNewJoiners` | employees |
 | SOPs | `getSops` | sops, employees |
