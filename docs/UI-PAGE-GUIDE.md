@@ -123,14 +123,14 @@ HR overview
 │ SOP Library          │Coming  │   lg: 2/3 + 1/3
 │                      │up      │
 └──────────────────────┴────────┘
-┌────────┬────────┬────────┐
-│Out this│New     │Pending │   md 2 → xl 3
-│week    │joiners │approval│
-└────────┴────────┴────────┘
 ┌─────────────┬─────────────┐
 │ Social      │ Headcount   │   lg: 1/2 + 1/2
 │ posts       │ by dept     │
 └─────────────┴─────────────┘
+┌────────┬────────┬────────┐
+│Out this│New     │Pending │   md 2 → xl 3
+│week    │joiners │approval│
+└────────┴────────┴────────┘
 ```
 
 **KPI row**

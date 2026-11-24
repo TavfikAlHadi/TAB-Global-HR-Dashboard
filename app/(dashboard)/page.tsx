@@ -52,19 +52,19 @@ async function HrView({ filter, canPost }: { filter: Filter; canPost: boolean })
         </Panel>
         <Panel title="Coming up"><EventsPanel events={events} limit={6} /></Panel>
       </section>
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <Panel title="Out this week"><OutThisWeekPanel absences={week} days={days} /></Panel>
-        <Panel title="New joiners"><NewJoinersPanel joiners={joiners} today={today} /></Panel>
-        <Panel title="Pending approvals" className="md:col-span-2 xl:col-span-1" action={<Badge className="bg-amber-100 text-amber-800">{pending.length} open</Badge>}>
-          <ApprovalsPanel requests={pending} />
-        </Panel>
-      </section>
       <section className="grid gap-4 lg:grid-cols-2">
         <Panel title="Recent social media posts" description="Open a post to like it, or share it to your own profile">
           <SocialPanel posts={social} canPost={canPost} />
         </Panel>
         <Panel title="Headcount by department">
           <DepartmentPie data={depts} />
+        </Panel>
+      </section>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <Panel title="Out this week"><OutThisWeekPanel absences={week} days={days} /></Panel>
+        <Panel title="New joiners"><NewJoinersPanel joiners={joiners} today={today} /></Panel>
+        <Panel title="Pending approvals" className="md:col-span-2 xl:col-span-1" action={<Badge className="bg-amber-100 text-amber-800">{pending.length} open</Badge>}>
+          <ApprovalsPanel requests={pending} />
         </Panel>
       </section>
     </div>
